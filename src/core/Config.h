@@ -14,6 +14,9 @@ struct Config {
     uint32_t renderHeight = 256;
     std::string scene = "triangle";
     bool planetCurvature = false;
+    uint64_t worldSeed = 42;
+    int streamHorizontalDistance = 8;
+    int streamVerticalDistance = 4;
 
     static Config parse(int argc, char** argv);
     static const Config& active();

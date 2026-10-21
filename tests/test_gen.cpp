@@ -65,7 +65,7 @@ TEST_CASE("worldgen schema v1 rejects invalid block ids and fields") {
 TEST_CASE("terrain generation is seed-deterministic across runs and threads") {
     const voxel::gen::WorldGenData data = loadValidatedWorldGen();
     const voxel::gen::TerrainGen gen(data);
-    const voxel::world::ChunkPos pos{2, 1, -3};
+    const voxel::world::ChunkPos pos{8, 2, 8};
     constexpr uint64_t seed = 0xDEADBEEF42ULL;
 
     const uint64_t hashA = generateHash(gen, pos, seed);
@@ -102,39 +102,159 @@ TEST_CASE("terrain places bedrock at floor and water at sea level below surface"
         }
     }
 
-    std::array<voxel::world::ChunkStorage, 4> columns{};
-    for (int chunkY = 0; chunkY < 4; ++chunkY) {
-        gen.generate({0, chunkY, 0}, columns[static_cast<size_t>(chunkY)], seed);
-    }
+    int foundWx = -1;
+    int foundWz = -1;
+    int surfaceWorldY = -1;
 
-    const auto worldBlock = [&](int wx, int wy, int wz) -> voxel::core::BlockId {
-        const int chunkY = wy / voxel::world::kChunkSize;
-        if (chunkY < 0 || chunkY >= 4 || wx < 0 || wx >= voxel::world::kChunkSize || wz < 0 ||
-            wz >= voxel::world::kChunkSize) {
-            return 0;
-        }
-        const int ly = wy - chunkY * voxel::world::kChunkSize;
-        return columns[static_cast<size_t>(chunkY)].get(wx, ly, wz);
-    };
+    for (int wz = 64; wz < 256 && foundWx < 0; wz += 8) {
+        for (int wx = 64; wx < 256; ++wx) {
+            const int chunkX = wx / voxel::world::kChunkSize;
+            const int chunkZ = wz / voxel::world::kChunkSize;
+            std::array<voxel::world::ChunkStorage, 4> columns{};
+            for (int chunkY = 0; chunkY < 4; ++chunkY) {
+                gen.generate({chunkX, chunkY, chunkZ}, columns[static_cast<size_t>(chunkY)], seed);
+            }
+            const auto worldBlock = [&](int worldX, int worldY, int worldZ) -> voxel::core::BlockId {
+                const int cy = worldY / voxel::world::kChunkSize;
+                if (cy < 0 || cy >= 4) {
+                    return 0;
+                }
+                const int cx = worldX / voxel::world::kChunkSize;
+                const int cz = worldZ / voxel::world::kChunkSize;
+                if (cx != chunkX || cz != chunkZ) {
+                    return 0;
+                }
+                const int ly = worldY - cy * voxel::world::kChunkSize;
+                return columns[static_cast<size_t>(cy)].get(worldX % voxel::world::kChunkSize, ly,
+                                                           worldZ % voxel::world::kChunkSize);
+            };
 
-    bool verifiedWaterColumn = false;
-    for (int x = 0; x < voxel::world::kChunkSize; ++x) {
-        for (int z = 0; z < voxel::world::kChunkSize; ++z) {
-            int surfaceWorldY = -1;
-            for (int wy = 0; wy <= data.sea_level; ++wy) {
-                const auto id = worldBlock(x, wy, z);
+            int localSurface = -1;
+            for (int wy = data.sea_level; wy >= 0; --wy) {
+                const auto id = worldBlock(wx, wy, wz);
                 if (id != 0 && id != 5) {
-                    surfaceWorldY = wy;
+                    localSurface = wy;
+                    break;
                 }
             }
-            if (surfaceWorldY < 0 || surfaceWorldY >= data.sea_level) {
+            if (localSurface < 0 || localSurface >= data.sea_level) {
                 continue;
             }
-            verifiedWaterColumn = true;
+            foundWx = wx;
+            foundWz = wz;
+            surfaceWorldY = localSurface;
             for (int wy = surfaceWorldY + 1; wy <= data.sea_level; ++wy) {
-                CHECK(worldBlock(x, wy, z) == 5);
+                CHECK(worldBlock(wx, wy, wz) == 5);
+            }
+            break;
+        }
+    }
+    REQUIRE(foundWx >= 0);
+}
+
+TEST_CASE("ores appear only inside configured depth bands") {
+    const voxel::gen::WorldGenData data = loadValidatedWorldGen();
+    const voxel::gen::TerrainGen gen(data);
+    constexpr uint64_t seed = 42;
+
+    bool foundOre = false;
+    for (int chunkY = 0; chunkY < 6; ++chunkY) {
+        for (int chunkX = 0; chunkX < 4; ++chunkX) {
+            voxel::world::ChunkStorage storage;
+            gen.generate({chunkX, chunkY, 0}, storage, seed);
+            const int baseY = chunkY * voxel::world::kChunkSize;
+            for (int lz = 0; lz < voxel::world::kChunkSize; ++lz) {
+                for (int ly = 0; ly < voxel::world::kChunkSize; ++ly) {
+                    for (int lx = 0; lx < voxel::world::kChunkSize; ++lx) {
+                        const auto id = storage.get(lx, ly, lz);
+                        if (id != 8 && id != 9) {
+                            continue;
+                        }
+                        foundOre = true;
+                        const int wy = baseY + ly;
+                        bool inBand = false;
+                        for (const voxel::gen::OreDef& ore : data.ores) {
+                            if (ore.block == id && wy >= ore.min_y && wy <= ore.max_y) {
+                                inBand = true;
+                                break;
+                            }
+                        }
+                        CHECK(inBand);
+                    }
+                }
             }
         }
     }
-    CHECK(verifiedWaterColumn);
+    CHECK(foundOre);
+}
+
+TEST_CASE("trees use log and leaves blocks from data") {
+    const voxel::gen::WorldGenData data = loadValidatedWorldGen();
+    const voxel::gen::TerrainGen gen(data);
+    constexpr uint64_t seed = 42;
+    REQUIRE_FALSE(data.trees.empty());
+
+    bool foundLog = false;
+    bool foundLeaves = false;
+    for (int chunkX = 0; chunkX < 8; ++chunkX) {
+        for (int chunkZ = 0; chunkZ < 8; ++chunkZ) {
+            voxel::world::ChunkStorage storage;
+            gen.generate({chunkX, 2, chunkZ}, storage, seed);
+            for (int lz = 0; lz < voxel::world::kChunkSize; ++lz) {
+                for (int ly = 0; ly < voxel::world::kChunkSize; ++ly) {
+                    for (int lx = 0; lx < voxel::world::kChunkSize; ++lx) {
+                        const auto id = storage.get(lx, ly, lz);
+                        if (id == data.trees[0].log_block) {
+                            foundLog = true;
+                        }
+                        if (id == data.trees[0].leaves_block) {
+                            foundLeaves = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    CHECK(foundLog);
+    CHECK(foundLeaves);
+}
+
+TEST_CASE("world border is bedrock along region edges") {
+    const voxel::gen::WorldGenData data = loadValidatedWorldGen();
+    const voxel::gen::TerrainGen gen(data);
+    constexpr uint64_t seed = 7;
+
+    voxel::world::ChunkStorage edgeChunk;
+    gen.generate({0, 2, 0}, edgeChunk, seed);
+    const int edgeX = 0;
+    const int edgeZ = 0;
+    for (int ly = 0; ly < voxel::world::kChunkSize; ++ly) {
+        const int wy = 2 * voxel::world::kChunkSize + ly;
+        if (wy < 0 || wy >= data.region.size_y) {
+            continue;
+        }
+        CHECK(edgeChunk.get(edgeX, ly, edgeZ) == 10);
+    }
+
+    const int maxChunkX = (data.region.size_x - 1) / voxel::world::kChunkSize;
+    const int maxChunkZ = (data.region.size_z - 1) / voxel::world::kChunkSize;
+    voxel::world::ChunkStorage farEdge;
+    gen.generate({maxChunkX, 2, maxChunkZ}, farEdge, seed);
+    const int lx = (data.region.size_x - 1) % voxel::world::kChunkSize;
+    const int lz = (data.region.size_z - 1) % voxel::world::kChunkSize;
+    for (int ly = 0; ly < voxel::world::kChunkSize; ++ly) {
+        const int wy = 2 * voxel::world::kChunkSize + ly;
+        if (wy < 0 || wy >= data.region.size_y) {
+            continue;
+        }
+        CHECK(farEdge.get(lx, ly, lz) == 10);
+    }
+}
+
+TEST_CASE("biome_noise maps noise samples to four biomes") {
+    const voxel::gen::WorldGenData data = loadValidatedWorldGen();
+    CHECK(voxel::gen::pickBiome(data, -0.75f).name == "plains");
+    CHECK(voxel::gen::pickBiome(data, -0.25f).name == "forest");
+    CHECK(voxel::gen::pickBiome(data, 0.25f).name == "desert");
+    CHECK(voxel::gen::pickBiome(data, 0.75f).name == "mountains");
 }

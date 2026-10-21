@@ -7,7 +7,9 @@
 #include "gfx/ChunkRenderer.h"
 #include "gfx/Frustum.h"
 #include "gfx/TextureArray.h"
+#include "gfx/TerrainCamera.h"
 #include "gfx/TestCubeCamera.h"
+#include "gfx/scene/TerrainScene.h"
 #include "gfx/scene/TestCubeScene.h"
 
 #include <spdlog/spdlog.h>
@@ -68,15 +70,20 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     VkDevice device = ctx.device();
     VmaAllocator allocator = ctx.allocator();
 
-    voxel::world::World world;
-    const std::filesystem::path blocksPath =
-        std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
-    world.loadBlocks(blocksPath);
+    const bool terrainScene = voxel::core::Config::active().scene == "terrain";
 
+    voxel::world::World world;
     const std::filesystem::path texDir = std::filesystem::path(VOXEL_SOURCE_DIR) / "assets/textures";
     TextureArray textures(ctx, texDir.string());
-    scene::populateWorldFromTestCube(world);
-    world.chunkManager.waitForPendingMeshes();
+    if (terrainScene) {
+        scene::setupTerrainWorld(world);
+    } else {
+        const std::filesystem::path blocksPath =
+            std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
+        world.loadBlocks(blocksPath);
+        scene::populateWorldFromTestCube(world);
+        world.chunkManager.waitForPendingMeshes();
+    }
 
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -199,7 +206,7 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     const auto blockQuery = [&world](int wx, int wy, int wz) { return world.getBlock(wx, wy, wz); };
     renderer.buildFromChunkManager(world.chunkManager, blockQuery);
 
-    Camera camera = makeTestCubeCamera();
+    Camera camera = terrainScene ? makeTerrainGoldenCamera() : makeTestCubeCamera();
 
     Frustum frustum;
     const float aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -320,9 +327,9 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
 
     spdlog::info(
-        "test_cube culling: registered={} non_empty={} frustum_pass={} drawn={}",
-        renderer.chunkCount(), renderer.nonEmptyChunkCount(), renderer.frustumVisibleChunkCount(),
-        renderer.drawnChunkCount());
+        "{} culling: registered={} non_empty={} frustum_pass={} drawn={}",
+        terrainScene ? "terrain" : "test_cube", renderer.chunkCount(), renderer.nonEmptyChunkCount(),
+        renderer.frustumVisibleChunkCount(), renderer.drawnChunkCount());
 
     const VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * 4;
     VkBuffer stagingBuffer = VK_NULL_HANDLE;
@@ -382,7 +389,8 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
                         static_cast<int>(width * 3))) {
         throw std::runtime_error("stbi_write_png failed for " + outPath);
     }
-    spdlog::info("Wrote {} ({}x{}, {} frame(s), scene=test_cube)", outPath, width, height, frames);
+    spdlog::info("Wrote {} ({}x{}, {} frame(s), scene={})", outPath, width, height, frames,
+                 terrainScene ? "terrain" : "test_cube");
 
     vmaDestroyBuffer(allocator, stagingBuffer, stagingAlloc);
     vkDestroyFence(device, fence, nullptr);

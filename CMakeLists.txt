@@ -71,11 +71,14 @@ set(VOXEL_LIB_SOURCES
     src/world/FlatWorldGen.cpp
     src/world/RegionFile.cpp
     src/world/WorldRegister.cpp
+    src/world/WorldSession.cpp
+    src/world/ChunkStreamingRegister.cpp
     src/gen/Biomes.cpp
     src/gen/TerrainGen.cpp
     src/gen/Caves.cpp
     src/gen/Ores.cpp
     src/gen/Trees.cpp
+    src/gen/WorldBorder.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
     src/gfx/HeadlessChunks.cpp
@@ -85,6 +88,8 @@ set(VOXEL_LIB_SOURCES
     src/gfx/ChunkRenderer.cpp
     src/gfx/ChunkRendererRegister.cpp
     src/gfx/TestCubeCamera.cpp
+    src/gfx/TerrainCamera.cpp
+    src/gfx/scene/TerrainScene.cpp
     src/gfx/Swapchain.cpp
     src/gfx/DesktopApp.cpp
     src/gfx/scene/TestCubeScene.cpp

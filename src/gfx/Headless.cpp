@@ -69,7 +69,8 @@ Headless::Headless(VkContext& ctx) : ctx_(ctx) {}
 Headless::~Headless() = default;
 
 void Headless::run(int frames, uint32_t width, uint32_t height, const std::string& outPath) {
-    if (voxel::core::Config::active().scene == "test_cube") {
+    const std::string& scene = voxel::core::Config::active().scene;
+    if (scene == "test_cube" || scene == "terrain") {
         runHeadlessTestCubeScene(ctx_, frames, width, height, outPath);
         return;
     }

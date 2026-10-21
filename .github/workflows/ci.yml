@@ -77,9 +77,17 @@ jobs:
       - name: Golden image diff (test_cube)
         run: python3 tools/golden_diff.py build/ci_test_cube.png tests/golden/test_cube.png
 
+      - name: Headless render (terrain seed 42)
+        run: |
+          set -o pipefail
+          ./build/voxel --headless --scene terrain --seed 42 --stream-distance 4 --frames 1 --width 256 --height 256 --out build/ci_terrain_seed42.png 2>&1 | tee build/headless_terrain.log
+
+      - name: Golden image diff (terrain_seed42)
+        run: python3 tools/golden_diff.py build/ci_terrain_seed42.png tests/golden/terrain_seed42.png
+
       - name: Fail on Vulkan validation errors
         run: |
-          if grep -E 'Validation Error' build/headless_triangle.log build/headless_test_cube.log; then
+          if grep -E 'Validation Error' build/headless_triangle.log build/headless_test_cube.log build/headless_terrain.log; then
             echo "Vulkan validation errors detected"
             exit 1
           fi

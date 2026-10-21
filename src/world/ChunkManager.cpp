@@ -19,18 +19,24 @@ void ChunkManager::setBlocks(const voxel::core::BlocksFile* blocks) {
 }
 
 void ChunkManager::ensureLoaded(ChunkPos pos) {
-    std::lock_guard lock(mutex_);
-    if (chunks_.contains(pos)) {
-        return;
+    bool needsRemesh = false;
+    {
+        std::lock_guard lock(mutex_);
+        if (chunks_.contains(pos)) {
+            return;
+        }
+        ChunkEntry entry;
+        if (generator_ != nullptr) {
+            generator_->generate(pos, entry.storage, seed_);
+        } else {
+            entry.storage.fill(0);
+        }
+        chunks_.emplace(pos, std::move(entry));
+        needsRemesh = true;
     }
-    ChunkEntry entry;
-    if (generator_ != nullptr) {
-        generator_->generate(pos, entry.storage, seed_);
-    } else {
-        entry.storage.fill(0);
+    if (needsRemesh) {
+        requestRemesh(pos);
     }
-    chunks_.emplace(pos, std::move(entry));
-    requestRemesh(pos);
 }
 
 void ChunkManager::unloadOutside(const ChunkPos& center, int horizontalDistance, int verticalDistance) {

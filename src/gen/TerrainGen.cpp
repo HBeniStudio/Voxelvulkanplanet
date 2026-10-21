@@ -1,8 +1,10 @@
 #include "gen/TerrainGen.h"
 
 #include "gen/Caves.h"
+#include "gen/NoiseUtil.h"
 #include "gen/Ores.h"
 #include "gen/Trees.h"
+#include "gen/WorldBorder.h"
 #include "world/ChunkStorage.h"
 
 #include <algorithm>
@@ -16,20 +18,16 @@ namespace {
 constexpr voxel::core::BlockId kBedrock = 10;
 constexpr voxel::core::BlockId kWater = 5;
 
-FastNoise::SmartNode<> makeFractalNoise(const NoiseParams& params) {
-    auto simplex = FastNoise::New<FastNoise::Simplex>();
-    simplex->SetScale(1.0f / std::max(params.frequency, 1.0e-6f));
-    auto fractal = FastNoise::New<FastNoise::FractalFBm>();
-    fractal->SetSource(simplex);
-    fractal->SetOctaveCount(static_cast<int>(std::max(1, params.octaves)));
-    return fractal;
-}
-
 } // namespace
 
 TerrainGen::TerrainGen(WorldGenData data) : data_(std::move(data)) {
     heightNoise_ = makeFractalNoise(data_.height_noise);
     biomeNoise_ = makeFractalNoise(data_.biome_noise);
+    caveNoise_ = makeFractalNoise(data_.cave_noise);
+    NoiseParams oreParams = data_.height_noise;
+    oreParams.octaves = 2;
+    oreParams.frequency = 0.05f;
+    oreNoise_ = makeFractalNoise(oreParams);
 }
 
 int TerrainGen::surfaceHeightAt(int wx, int wz, uint64_t seed) const {
@@ -111,9 +109,31 @@ void TerrainGen::generate(voxel::world::ChunkPos pos, voxel::world::ChunkStorage
         }
     }
 
-    applyCaves(data_, seed, pos, storage);
-    applyOres(data_, seed, pos, storage);
-    applyTrees(data_, seed, pos, storage);
+    applyCaves(data_, caveNoise_, seed, pos, storage);
+    applyOres(data_, oreNoise_, seed, pos, storage);
+    applyTrees(data_, biomeNoise_, seed, pos, storage);
+
+    for (int lz = 0; lz < voxel::world::kChunkSize; ++lz) {
+        for (int lx = 0; lx < voxel::world::kChunkSize; ++lx) {
+            const int wx = wx0 + lx;
+            const int wz = wz0 + lz;
+            const int surfaceY = surfaceHeights[static_cast<size_t>(lz * voxel::world::kChunkSize + lx)];
+            if (surfaceY >= data_.sea_level) {
+                continue;
+            }
+            for (int ly = 0; ly < voxel::world::kChunkSize; ++ly) {
+                const int wy = baseY + ly;
+                if (wy <= surfaceY || wy > data_.sea_level) {
+                    continue;
+                }
+                if (storage.get(lx, ly, lz) == 0) {
+                    storage.set(lx, ly, lz, kWater);
+                }
+            }
+        }
+    }
+
+    applyWorldBorder(data_, pos, storage);
 }
 
 uint64_t hashChunkStorage(const voxel::world::ChunkStorage& storage) {
