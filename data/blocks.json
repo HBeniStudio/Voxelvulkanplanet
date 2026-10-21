@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "blocks": [
+    {
+      "id": 0,
+      "name": "air",
+      "solid": false,
+      "transparent": true,
+      "texture": { "top": "", "side": "", "bottom": "" },
+      "hardness": 0,
+      "drops": []
+    },
+    {
+      "id": 1,
+      "name": "stone",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "stone", "side": "stone", "bottom": "stone" },
+      "hardness": 1.5,
+      "drops": []
+    },
+    {
+      "id": 2,
+      "name": "dirt",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "dirt", "side": "dirt", "bottom": "dirt" },
+      "hardness": 0.5,
+      "drops": []
+    },
+    {
+      "id": 3,
+      "name": "grass",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "grass_top", "side": "grass_side", "bottom": "dirt" },
+      "hardness": 0.6,
+      "drops": []
+    },
+    {
+      "id": 4,
+      "name": "sand",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "sand", "side": "sand", "bottom": "sand" },
+      "hardness": 0.5,
+      "drops": []
+    },
+    {
+      "id": 5,
+      "name": "water",
+      "solid": false,
+      "transparent": true,
+      "texture": { "top": "water", "side": "water", "bottom": "water" },
+      "hardness": 0,
+      "drops": []
+    },
+    {
+      "id": 6,
+      "name": "log",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "log_top", "side": "log_side", "bottom": "log_top" },
+      "hardness": 2.0,
+      "drops": []
+    },
+    {
+      "id": 7,
+      "name": "leaves",
+      "solid": true,
+      "transparent": true,
+      "texture": { "top": "leaves", "side": "leaves", "bottom": "leaves" },
+      "hardness": 0.2,
+      "drops": []
+    },
+    {
+      "id": 8,
+      "name": "coal_ore",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "coal_ore", "side": "coal_ore", "bottom": "coal_ore" },
+      "hardness": 3.0,
+      "drops": []
+    },
+    {
+      "id": 9,
+      "name": "iron_ore",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "iron_ore", "side": "iron_ore", "bottom": "iron_ore" },
+      "hardness": 3.0,
+      "drops": []
+    },
+    {
+      "id": 10,
+      "name": "bedrock",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "bedrock", "side": "bedrock", "bottom": "bedrock" },
+      "hardness": -1,
+      "drops": []
+    },
+    {
+      "id": 11,
+      "name": "planks",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "planks", "side": "planks", "bottom": "planks" },
+      "hardness": 2.0,
+      "drops": []
+    },
+    {
+      "id": 12,
+      "name": "crafting_table",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "crafting_table_top", "side": "crafting_table_side", "bottom": "planks" },
+      "hardness": 2.5,
+      "drops": []
+    }
+  ]
+}

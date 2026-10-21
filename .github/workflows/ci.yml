@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+
+jobs:
+  linux-lavapipe:
+    runs-on: ubuntu-24.04
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
+      VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mesa / lavapipe version
+        run: |
+          dpkg -s mesa-vulkan-drivers | grep -E '^Version:'
+          ls -la /usr/share/vulkan/icd.d/lvp_icd.json
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build glslc g++ gcc build-essential pkg-config \
+            mesa-vulkan-drivers vulkan-validationlayers \
+            autoconf autoconf-archive automake libtool \
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev \
+            python3
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/.vcpkg-cache
+            ${{ github.workspace }}/build/vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+          git -C "$VCPKG_ROOT" fetch --depth 1 origin a2f9862da6d88040a8537fb9b8cb24deaa9a196b
+          git -C "$VCPKG_ROOT" checkout a2f9862da6d88040a8537fb9b8cb24deaa9a196b
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Headless render
+        run: |
+          set -o pipefail
+          ./build/voxel --headless --frames 1 --out build/ci_frame.png 2>&1 | tee build/headless.log
+
+      - name: Golden image diff
+        run: python3 tools/golden_diff.py build/ci_frame.png tests/golden/triangle.png
+
+      - name: Fail on Vulkan validation errors
+        run: |
+          if grep -E 'Validation Error' build/headless.log; then
+            echo "Vulkan validation errors detected"
+            exit 1
+          fi
+          echo "No validation errors in headless log"

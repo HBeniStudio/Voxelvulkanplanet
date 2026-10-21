@@ -6,5 +6,6 @@
 *.user
 CMakeUserPresets.json
 frame.png
+build/tests-out/
 *.spv
 /vcpkg/
