@@ -5,6 +5,14 @@
 
 namespace voxel::core {
 
+namespace {
+Config g_activeConfig;
+}
+
+const Config& Config::active() {
+    return g_activeConfig;
+}
+
 Config Config::parse(int argc, char** argv) {
     Config cfg;
     for (int i = 1; i < argc; ++i) {
@@ -29,13 +37,22 @@ Config Config::parse(int argc, char** argv) {
                 throw std::runtime_error("--log-level requires a value");
             }
             cfg.logLevel = argv[++i];
+        } else if (std::strcmp(arg, "--scene") == 0) {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("--scene requires a value");
+            }
+            cfg.scene = argv[++i];
+        } else if (std::strcmp(arg, "--planet-curvature") == 0) {
+            cfg.planetCurvature = true;
         } else if (std::strcmp(arg, "--help") == 0 || std::strcmp(arg, "-h") == 0) {
             throw std::runtime_error(
-                "usage: voxel [--headless] [--frames N] [--out path.png] [--log-level level]");
+                "usage: voxel [--headless] [--frames N] [--out path.png] [--scene name] "
+                "[--log-level level] [--planet-curvature]");
         } else {
             throw std::runtime_error(std::string("unknown argument: ") + arg);
         }
     }
+    g_activeConfig = cfg;
     return cfg;
 }
 

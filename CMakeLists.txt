@@ -21,6 +21,8 @@ find_program(GLSLC_EXECUTABLE glslc REQUIRED)
 set(SHADER_SOURCES
     shaders/tri.vert
     shaders/tri.frag
+    shaders/chunk.vert
+    shaders/chunk.frag
 )
 
 set(SPIRV_OUTPUTS "")
@@ -48,6 +50,13 @@ set(VOXEL_LIB_SOURCES
     src/core/World.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
+    src/gfx/HeadlessChunks.cpp
+    src/gfx/Camera.cpp
+    src/gfx/Frustum.cpp
+    src/gfx/TextureArray.cpp
+    src/gfx/ChunkRenderer.cpp
+    src/gfx/ChunkRendererRegister.cpp
+    src/gfx/scene/TestCubeScene.cpp
 )
 
 add_executable(voxel
