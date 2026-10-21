@@ -103,9 +103,11 @@ int runDesktopApp(const voxel::core::Config& cfg) {
     Swapchain swapchain(ctx, window);
     const std::filesystem::path texDir = std::filesystem::path(VOXEL_SOURCE_DIR) / "assets/textures";
     TextureArray textures(ctx, texDir.string());
-    const scene::TestCubeScene testScene = scene::TestCubeScene::build3x3x3Chunks();
+    scene::populateWorldFromTestCube(world);
+    world.chunkManager.waitForPendingMeshes();
     ChunkRenderer renderer(ctx, swapchain.renderPass(), textures, world.blocks);
-    renderer.buildFromScene(testScene);
+    const auto blockQuery = [&world](int wx, int wy, int wz) { return world.getBlock(wx, wy, wz); };
+    renderer.buildFromChunkManager(world.chunkManager, blockQuery);
 
     Camera camera = makeTestCubeCamera();
 

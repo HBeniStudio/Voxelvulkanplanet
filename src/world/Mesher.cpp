@@ -31,8 +31,8 @@ voxel::core::BlockId blockAt(const ChunkPos& pos, const ChunkStorage& storage, B
     return query(wx, wy, wz);
 }
 
-size_t greedyMergeQuads(std::array<std::array<uint16_t, kChunkSize>, kChunkSize>& grid) {
-    size_t quads = 0;
+std::vector<MeshQuad> greedyMergeQuads(std::array<std::array<uint16_t, kChunkSize>, kChunkSize>& grid) {
+    std::vector<MeshQuad> quads;
     for (int v = 0; v < kChunkSize; ++v) {
         for (int u = 0; u < kChunkSize; ++u) {
             const uint16_t type = grid[static_cast<size_t>(v)][static_cast<size_t>(u)];
@@ -57,7 +57,13 @@ size_t greedyMergeQuads(std::array<std::array<uint16_t, kChunkSize>, kChunkSize>
                     ++height;
                 }
             }
-            ++quads;
+            MeshQuad quad{};
+            quad.u = u;
+            quad.v = v;
+            quad.width = width;
+            quad.height = height;
+            quad.blockId = type;
+            quads.push_back(quad);
             for (int dv = 0; dv < height; ++dv) {
                 for (int du = 0; du < width; ++du) {
                     grid[static_cast<size_t>(v + dv)][static_cast<size_t>(u + du)] = 0;
@@ -68,10 +74,8 @@ size_t greedyMergeQuads(std::array<std::array<uint16_t, kChunkSize>, kChunkSize>
     return quads;
 }
 
-// axis: 0=X, 1=Y, 2=Z. positive=true means face normal points along +axis.
-size_t meshAxis(const ChunkPos& pos, const ChunkStorage& storage, BlockQueryFn& query,
-                const voxel::core::BlocksFile& blocks, int axis, bool positive) {
-    // sliceMask[slice][row] has one bit per column (column index 0..31).
+void meshAxis(const ChunkPos& pos, const ChunkStorage& storage, BlockQueryFn& query,
+              const voxel::core::BlocksFile& blocks, int axis, bool positive, std::vector<MeshQuad>& out) {
     std::array<std::array<uint32_t, kChunkSize>, kChunkSize + 1> sliceMask{};
     for (int slice = 0; slice <= kChunkSize; ++slice) {
         sliceMask[static_cast<size_t>(slice)].fill(0);
@@ -104,7 +108,6 @@ size_t meshAxis(const ChunkPos& pos, const ChunkStorage& storage, BlockQueryFn& 
         }
     }
 
-    size_t quads = 0;
     std::array<std::array<uint16_t, kChunkSize>, kChunkSize> grid{};
 
     for (int slice = 0; slice <= kChunkSize; ++slice) {
@@ -184,9 +187,14 @@ size_t meshAxis(const ChunkPos& pos, const ChunkStorage& storage, BlockQueryFn& 
             }
         }
 
-        quads += greedyMergeQuads(grid);
+        std::vector<MeshQuad> merged = greedyMergeQuads(grid);
+        for (MeshQuad& quad : merged) {
+            quad.axis = axis;
+            quad.positive = positive;
+            quad.slice = slice;
+            out.push_back(quad);
+        }
     }
-    return quads;
 }
 
 } // namespace
@@ -194,9 +202,14 @@ size_t meshAxis(const ChunkPos& pos, const ChunkStorage& storage, BlockQueryFn& 
 MesherResult meshChunkGreedy(const ChunkPos& pos, const ChunkStorage& storage, BlockQueryFn blockAtWorld,
                               const voxel::core::BlocksFile& blocks) {
     MesherResult result;
+    BlockQueryFn query = blockAtWorld;
     for (int axis = 0; axis < 3; ++axis) {
-        result.quadCount += meshAxis(pos, storage, blockAtWorld, blocks, axis, true);
-        result.quadCount += meshAxis(pos, storage, blockAtWorld, blocks, axis, false);
+        meshAxis(pos, storage, query, blocks, axis, true, result.quads);
+        meshAxis(pos, storage, query, blocks, axis, false, result.quads);
+    }
+    result.quadCount = result.quads.size();
+    for (const MeshQuad& quad : result.quads) {
+        result.coveredUnitFaces += static_cast<size_t>(quad.width) * static_cast<size_t>(quad.height);
     }
     return result;
 }

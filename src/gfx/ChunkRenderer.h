@@ -5,9 +5,12 @@
 #include "gfx/Frustum.h"
 #include "gfx/TextureArray.h"
 #include "gfx/VkContext.h"
-#include "gfx/scene/TestCubeScene.h"
+#include "world/Chunk.h"
 
 #include <glm/glm.hpp>
+
+#include "world/ChunkManager.h"
+#include "world/Mesher.h"
 
 #include <cstdint>
 #include <vector>
@@ -22,7 +25,7 @@ struct ChunkVertex {
 };
 
 struct ChunkGpuMesh {
-    scene::ChunkPosKey pos;
+    voxel::world::ChunkPos pos;
     Aabb bounds;
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VmaAllocation allocation = VK_NULL_HANDLE;
@@ -48,7 +51,8 @@ public:
     ChunkRenderer(const ChunkRenderer&) = delete;
     ChunkRenderer& operator=(const ChunkRenderer&) = delete;
 
-    void buildFromScene(const scene::TestCubeScene& scene);
+    void buildFromChunkManager(const voxel::world::ChunkManager& chunks,
+                               voxel::world::BlockQueryFn blockAtWorld);
     void draw(VkCommandBuffer cmd, const Camera& camera, float aspect, const Frustum& frustum,
               const ChunkPushConstants& extra);
 
