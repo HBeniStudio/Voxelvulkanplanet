@@ -3,7 +3,9 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
 #include <stdexcept>
+#include <vector>
 
 namespace voxel::gfx {
 

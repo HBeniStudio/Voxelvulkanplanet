@@ -9,6 +9,8 @@
 #include <filesystem>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
+#include <string>
 
 namespace {
 

@@ -1,7 +1,9 @@
 #include "core/Blocks.h"
 
 #include <array>
+#include <filesystem>
 #include <fstream>
+#include <string>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <unordered_set>

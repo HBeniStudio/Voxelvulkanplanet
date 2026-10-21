@@ -13,6 +13,7 @@
 
 #include <array>
 #include <cstring>
+#include <string>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>

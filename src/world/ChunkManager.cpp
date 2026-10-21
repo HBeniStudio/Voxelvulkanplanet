@@ -6,7 +6,10 @@
 
 #include <chrono>
 #include <cmath>
+#include <mutex>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace voxel::world {
 

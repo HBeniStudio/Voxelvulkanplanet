@@ -1,6 +1,11 @@
 #include "core/ThreadPool.h"
 
 #include <algorithm>
+#include <chrono>
+#include <functional>
+#include <mutex>
+#include <thread>
+#include <utility>
 
 namespace voxel::core {
 

@@ -3,7 +3,10 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
+#include <stdexcept>
+#include <string>
 #include <unordered_set>
 
 namespace voxel::gen {

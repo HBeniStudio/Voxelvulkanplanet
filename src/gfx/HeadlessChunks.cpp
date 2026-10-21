@@ -19,8 +19,11 @@
 #include <stb_image_write.h>
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <filesystem>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>

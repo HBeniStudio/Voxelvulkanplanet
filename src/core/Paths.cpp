@@ -1,5 +1,7 @@
 #include "core/Paths.h"
 
+#include <filesystem>
+#include <string>
 #include <vector>
 
 #if defined(_WIN32)

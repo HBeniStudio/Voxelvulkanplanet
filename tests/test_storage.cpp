@@ -3,6 +3,7 @@
 #include "world/ChunkStorage.h"
 
 #include <set>
+#include <vector>
 
 TEST_CASE("ChunkStorage uniform fill and get/set") {
     voxel::world::ChunkStorage storage;

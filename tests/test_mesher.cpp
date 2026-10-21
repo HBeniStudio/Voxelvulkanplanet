@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <string>
 #include <random>
 #include <set>
 #include <sstream>

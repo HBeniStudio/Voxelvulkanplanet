@@ -2,8 +2,11 @@
 
 #include "world/Chunk.h"
 
+#include <filesystem>
 #include <fstream>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace voxel::world {

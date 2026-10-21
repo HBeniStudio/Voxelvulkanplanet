@@ -4,6 +4,7 @@
 #include "world/RegionFile.h"
 
 #include <filesystem>
+#include <unordered_map>
 
 TEST_CASE("RegionFile save and load round-trip") {
     const std::filesystem::path worldDir =

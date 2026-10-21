@@ -1,6 +1,8 @@
 #include "world/World.h"
 
+#include <filesystem>
 #include <stdexcept>
+#include <string>
 
 namespace voxel::world {
 

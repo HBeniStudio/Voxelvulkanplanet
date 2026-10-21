@@ -3,7 +3,9 @@
 #include "world/ChunkStorage.h"
 #include "world/World.h"
 
+#include <chrono>
 #include <thread>
+#include <utility>
 
 namespace voxel::gfx::scene {
 

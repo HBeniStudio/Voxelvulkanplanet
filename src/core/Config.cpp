@@ -1,7 +1,9 @@
 #include "core/Config.h"
 
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 namespace voxel::core {
 

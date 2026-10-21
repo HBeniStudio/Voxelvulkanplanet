@@ -2,6 +2,7 @@
 
 #include <array>
 #include <bit>
+#include <vector>
 
 namespace voxel::world {
 

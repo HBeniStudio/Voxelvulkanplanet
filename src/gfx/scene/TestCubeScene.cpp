@@ -1,5 +1,8 @@
 #include "gfx/scene/TestCubeScene.h"
 
+#include <utility>
+#include <vector>
+
 namespace voxel::gfx::scene {
 
 TestCubeScene TestCubeScene::build3x3x3Chunks() {

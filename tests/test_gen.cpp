@@ -5,6 +5,7 @@
 #include "gen/TerrainGen.h"
 #include "world/Chunk.h"
 
+#include <array>
 #include <filesystem>
 #include <future>
 #include <string>
