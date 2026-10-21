@@ -35,7 +35,7 @@ uint64_t generateHash(const voxel::gen::TerrainGen& gen, voxel::world::ChunkPos 
 TEST_CASE("worldgen schema v1 accepts shipped biomes.json") {
     const auto data = loadValidatedWorldGen();
     CHECK(data.schema == 1);
-    CHECK(data.biomes.size() >= 1);
+    CHECK(data.biomes.size() >= 4);
     CHECK(data.ores.size() >= 1);
     CHECK(data.trees.size() >= 1);
 
@@ -83,6 +83,15 @@ TEST_CASE("worldgen schema v1 rejects invalid block ids and fields") {
     voxel::gen::WorldGenData noOres = good;
     noOres.ores.clear();
     CHECK_FALSE(voxel::gen::validateWorldGenSchemaV1(noOres, blocks).empty());
+
+    voxel::gen::WorldGenData tooFewBiomes = good;
+    tooFewBiomes.biomes.resize(3);
+    CHECK_FALSE(voxel::gen::validateWorldGenSchemaV1(tooFewBiomes, blocks).empty());
+
+    voxel::gen::WorldGenData badSnow = good;
+    badSnow.biomes[3].has_snow_rule = true;
+    badSnow.biomes[3].snow_block = 99;
+    CHECK_FALSE(voxel::gen::validateWorldGenSchemaV1(badSnow, blocks).empty());
 }
 
 TEST_CASE("terrain generation is seed-deterministic across runs and threads") {
@@ -272,6 +281,94 @@ TEST_CASE("world border is bedrock along region edges") {
         }
         CHECK(farEdge.get(lx, ly, lz) == 10);
     }
+}
+
+TEST_CASE("snow_line replaces surface block at or above threshold") {
+    voxel::gen::WorldGenData data = loadValidatedWorldGen();
+    const voxel::gen::BiomeDef* mountains = nullptr;
+    for (const voxel::gen::BiomeDef& biome : data.biomes) {
+        if (biome.name == "mountains") {
+            mountains = &biome;
+        }
+    }
+    REQUIRE(mountains != nullptr);
+    REQUIRE(mountains->has_snow_rule);
+
+    voxel::gen::TerrainGen gen(data);
+    constexpr uint64_t seed = 11;
+    bool foundSnowCap = false;
+    for (int chunkX = 0; chunkX < 16; ++chunkX) {
+        for (int chunkZ = 0; chunkZ < 16; ++chunkZ) {
+            for (int chunkY = 3; chunkY < 6; ++chunkY) {
+                voxel::world::ChunkStorage storage;
+                gen.generate({chunkX, chunkY, chunkZ}, storage, seed);
+                const int baseY = chunkY * voxel::world::kChunkSize;
+                for (int lz = 0; lz < voxel::world::kChunkSize; ++lz) {
+                    for (int lx = 0; lx < voxel::world::kChunkSize; ++lx) {
+                        for (int ly = voxel::world::kChunkSize - 1; ly >= 0; --ly) {
+                            const int wy = baseY + ly;
+                            const auto id = storage.get(lx, ly, lz);
+                            if (id == 0 || id == 5) {
+                                continue;
+                            }
+                            if (wy >= mountains->snow_line && id == mountains->snow_block) {
+                                foundSnowCap = true;
+                            }
+                            goto next_column;
+                        }
+                    }
+                }
+            next_column:;
+            }
+        }
+    }
+    CHECK(foundSnowCap);
+}
+
+TEST_CASE("cactus tree omits leaves when leaves_block is air") {
+    const voxel::core::BlocksFile blocks = voxel::core::loadBlocksJson(
+        std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json");
+    voxel::gen::WorldGenData data = loadValidatedWorldGen();
+    voxel::gen::TreeDef cactusTree;
+    cactusTree.id = static_cast<int>(data.trees.size());
+    cactusTree.log_block = 15;
+    cactusTree.leaves_block = 0;
+    cactusTree.min_height = 2;
+    cactusTree.max_height = 3;
+    cactusTree.canopy_radius = 1;
+    data.trees.push_back(cactusTree);
+    for (size_t i = 0; i < data.biomes.size(); ++i) {
+        data.biomes[i].tree_density = 0.0f;
+        data.biomes[i].tree_ids.clear();
+    }
+    data.biomes[2].tree_ids = {cactusTree.id};
+    data.biomes[2].tree_density = 1.0f;
+    REQUIRE(voxel::gen::validateWorldGenSchemaV1(data, blocks).empty());
+
+    const voxel::gen::TerrainGen gen(data);
+    bool foundCactus = false;
+    bool foundLeaves = false;
+    for (int chunkX = 0; chunkX < 12; ++chunkX) {
+        for (int chunkZ = 0; chunkZ < 12; ++chunkZ) {
+            voxel::world::ChunkStorage storage;
+            gen.generate({chunkX, 2, chunkZ}, storage, 1);
+            for (int z = 0; z < voxel::world::kChunkSize; ++z) {
+                for (int y = 0; y < voxel::world::kChunkSize; ++y) {
+                    for (int x = 0; x < voxel::world::kChunkSize; ++x) {
+                        const auto id = storage.get(x, y, z);
+                        if (id == 15) {
+                            foundCactus = true;
+                        }
+                        if (id == 7 || id == 14) {
+                            foundLeaves = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    CHECK(foundCactus);
+    CHECK_FALSE(foundLeaves);
 }
 
 TEST_CASE("biome_noise maps noise samples to four biomes") {

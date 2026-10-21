@@ -75,6 +75,17 @@ WorldGenData loadWorldGenJson(const std::filesystem::path& path) {
                 biome.tree_ids.push_back(treeId.get<int>());
             }
         }
+        const bool hasSnowLine = entry.contains("snow_line");
+        const bool hasSnowBlock = entry.contains("snow_block");
+        if (hasSnowLine || hasSnowBlock) {
+            if (!hasSnowLine || !hasSnowBlock) {
+                throw std::runtime_error("biome " + biome.name + ": snow_line and snow_block must both be set");
+            }
+            biome.has_snow_rule = true;
+            biome.snow_line = entry.at("snow_line").get<int>();
+            biome.snow_block =
+                static_cast<voxel::core::BlockId>(entry.at("snow_block").get<int>());
+        }
         data.biomes.push_back(biome);
     }
 
@@ -93,7 +104,11 @@ WorldGenData loadWorldGenJson(const std::filesystem::path& path) {
         TreeDef tree;
         tree.id = entry.at("id").get<int>();
         tree.log_block = static_cast<voxel::core::BlockId>(entry.at("log_block").get<int>());
-        tree.leaves_block = static_cast<voxel::core::BlockId>(entry.at("leaves_block").get<int>());
+        if (entry.contains("leaves_block")) {
+            tree.leaves_block = static_cast<voxel::core::BlockId>(entry.at("leaves_block").get<int>());
+        } else {
+            tree.leaves_block = 0;
+        }
         tree.min_height = entry.at("min_height").get<int>();
         tree.max_height = entry.at("max_height").get<int>();
         tree.canopy_radius = entry.at("canopy_radius").get<int>();
@@ -116,8 +131,22 @@ std::string validateWorldGenSchemaV1(const WorldGenData& data, const voxel::core
     if (data.height_noise.octaves < 1 || data.biome_noise.octaves < 1 || data.cave_noise.octaves < 1) {
         return "noise octaves must be >= 1";
     }
-    if (data.biomes.empty()) {
-        return "biomes array must not be empty";
+    if (data.biomes.size() < 4) {
+        return "biomes array must contain at least 4 entries";
+    }
+
+    static const char* kRequiredBiomes[] = {"plains", "forest", "desert", "mountains"};
+    for (const char* required : kRequiredBiomes) {
+        bool found = false;
+        for (const BiomeDef& biome : data.biomes) {
+            if (biome.name == required) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return std::string("missing required biome: ") + required;
+        }
     }
 
     std::unordered_set<int> biomeIds;
@@ -151,6 +180,15 @@ std::string validateWorldGenSchemaV1(const WorldGenData& data, const voxel::core
                 if (!seenTreeRefs.insert(treeId).second) {
                     return "biome " + biome.name + ": duplicate tree id " + std::to_string(treeId);
                 }
+            }
+        }
+        if (biome.has_snow_rule) {
+            if (const std::string err = checkBlockId("biome snow_block", biome.snow_block, blocks);
+                !err.empty()) {
+                return err;
+            }
+            if (biome.snow_line < 0 || biome.snow_line >= data.region.size_y) {
+                return "biome " + biome.name + ": snow_line out of region bounds";
             }
         }
     }
@@ -192,13 +230,17 @@ std::string validateWorldGenSchemaV1(const WorldGenData& data, const voxel::core
         if (!treeIds.insert(tree.id).second) {
             return "duplicate tree id " + std::to_string(tree.id);
         }
-        if (const std::string err = checkBlockId("tree log_block", tree.log_block, blocks);
-            !err.empty()) {
+        if (tree.log_block == 0) {
+            return "tree id " + std::to_string(tree.id) + ": log_block must not be air";
+        }
+        if (const std::string err = checkBlockId("tree log_block", tree.log_block, blocks); !err.empty()) {
             return err;
         }
-        if (const std::string err = checkBlockId("tree leaves_block", tree.leaves_block, blocks);
-            !err.empty()) {
-            return err;
+        if (tree.leaves_block != 0) {
+            if (const std::string err = checkBlockId("tree leaves_block", tree.leaves_block, blocks);
+                !err.empty()) {
+                return err;
+            }
         }
         if (tree.min_height < 1 || tree.max_height < tree.min_height) {
             return "tree id " + std::to_string(tree.id) + ": invalid height range";

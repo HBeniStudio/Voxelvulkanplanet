@@ -41,6 +41,10 @@ void placeTree(const TreeDef& tree, voxel::world::ChunkStorage& storage, int lx,
         storage.set(lx, ly, lz, tree.log_block);
     }
 
+    if (tree.leaves_block == 0 || tree.canopy_radius <= 0) {
+        return;
+    }
+
     const int canopyBaseLy = surfaceLy + clampedHeight - 1;
     for (int dz = -tree.canopy_radius; dz <= tree.canopy_radius; ++dz) {
         for (int dy = -1; dy <= tree.canopy_radius; ++dy) {

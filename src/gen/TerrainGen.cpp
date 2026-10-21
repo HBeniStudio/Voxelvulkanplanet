@@ -93,6 +93,9 @@ void TerrainGen::generate(voxel::world::ChunkPos pos, voxel::world::ChunkStorage
                     const int depthBelowSurface = surfaceY - wy;
                     if (depthBelowSurface == 0) {
                         id = biome.surface_block;
+                        if (biome.has_snow_rule && surfaceY >= biome.snow_line) {
+                            id = biome.snow_block;
+                        }
                     } else if (depthBelowSurface <= 3) {
                         id = biome.subsurface_block;
                     } else {

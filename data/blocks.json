@@ -117,6 +117,42 @@
       "texture": { "top": "crafting_table_top", "side": "crafting_table_side", "bottom": "planks" },
       "hardness": 2.5,
       "drops": []
+    },
+    {
+      "id": 13,
+      "name": "pine_log",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "pine_log_top", "side": "pine_log_side", "bottom": "pine_log_top" },
+      "hardness": 2.0,
+      "drops": []
+    },
+    {
+      "id": 14,
+      "name": "pine_leaves",
+      "solid": true,
+      "transparent": true,
+      "texture": { "top": "pine_leaves", "side": "pine_leaves", "bottom": "pine_leaves" },
+      "hardness": 0.2,
+      "drops": []
+    },
+    {
+      "id": 15,
+      "name": "cactus",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "cactus", "side": "cactus", "bottom": "cactus" },
+      "hardness": 0.4,
+      "drops": []
+    },
+    {
+      "id": 16,
+      "name": "snow",
+      "solid": true,
+      "transparent": false,
+      "texture": { "top": "snow", "side": "snow", "bottom": "snow" },
+      "hardness": 0.1,
+      "drops": []
     }
   ]
 }
