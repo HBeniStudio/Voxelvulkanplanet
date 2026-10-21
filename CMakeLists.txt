@@ -48,6 +48,16 @@ set(VOXEL_LIB_SOURCES
     src/core/Config.cpp
     src/core/Blocks.cpp
     src/core/World.cpp
+    src/core/ThreadPool.cpp
+    src/world/World.cpp
+    src/world/Chunk.cpp
+    src/world/ChunkStorage.cpp
+    src/world/Mesher.cpp
+    src/world/MeshVertices.cpp
+    src/world/ChunkManager.cpp
+    src/world/FlatWorldGen.cpp
+    src/world/RegionFile.cpp
+    src/world/WorldRegister.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
     src/gfx/HeadlessChunks.cpp
@@ -60,6 +70,7 @@ set(VOXEL_LIB_SOURCES
     src/gfx/Swapchain.cpp
     src/gfx/DesktopApp.cpp
     src/gfx/scene/TestCubeScene.cpp
+    src/gfx/scene/TestCubeWorld.cpp
 )
 
 add_executable(voxel
@@ -123,7 +134,13 @@ if(WIN32)
     target_compile_definitions(voxel_desktop PRIVATE NOMINMAX)
 endif()
 
-add_executable(voxel_tests tests/test_main.cpp ${VOXEL_LIB_SOURCES})
+add_executable(voxel_tests
+    tests/test_main.cpp
+    tests/test_storage.cpp
+    tests/test_mesher.cpp
+    tests/test_region.cpp
+    ${VOXEL_LIB_SOURCES}
+)
 add_dependencies(voxel_tests shaders)
 
 target_include_directories(voxel_tests PRIVATE

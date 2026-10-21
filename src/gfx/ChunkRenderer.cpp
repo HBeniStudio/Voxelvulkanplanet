@@ -1,6 +1,7 @@
 #include "gfx/ChunkRenderer.h"
 
 #include "gfx/GfxShaderUtil.h"
+#include "world/MeshVertices.h"
 
 #include <spdlog/spdlog.h>
 
@@ -311,81 +312,44 @@ void ChunkRenderer::uploadMesh(ChunkGpuMesh& mesh, const std::vector<ChunkVertex
     vmaUnmapMemory(allocator, mesh.allocation);
 }
 
-void ChunkRenderer::buildFromScene(const scene::TestCubeScene& scene) {
+void ChunkRenderer::buildFromChunkManager(const voxel::world::ChunkManager& chunks,
+                                          voxel::world::BlockQueryFn blockAtWorld) {
     meshes_.clear();
-    const auto positions = scene.chunkPositions();
+    const auto positions = chunks.loadedChunkPositions();
     meshes_.reserve(positions.size());
 
-    for (const scene::ChunkPosKey& pos : positions) {
+    const auto layerForTexture = [this](const std::string& name) -> float {
+        return static_cast<float>(textures_.layerForName(name));
+    };
+
+    for (const voxel::world::ChunkPos& pos : positions) {
         ChunkGpuMesh mesh{};
         mesh.pos = pos;
-        const glm::vec3 chunkOrigin(static_cast<float>(pos.x * scene::kChunkSize),
-                                  static_cast<float>(pos.y * scene::kChunkSize),
-                                  static_cast<float>(pos.z * scene::kChunkSize));
-        mesh.bounds = {chunkOrigin, chunkOrigin + glm::vec3(scene::kChunkSize)};
+        const glm::vec3 chunkOrigin(static_cast<float>(pos.x * voxel::world::kChunkSize),
+                                    static_cast<float>(pos.y * voxel::world::kChunkSize),
+                                    static_cast<float>(pos.z * voxel::world::kChunkSize));
+        mesh.bounds = {chunkOrigin, chunkOrigin + glm::vec3(voxel::world::kChunkSize)};
+
+        const std::vector<voxel::world::MeshQuad>& quads = chunks.meshQuads(pos);
+        const std::vector<voxel::world::MeshVertex> meshVerts =
+            voxel::world::buildVerticesFromQuads(pos, quads, blocks_, layerForTexture);
 
         std::vector<ChunkVertex> vertices;
-        const auto& voxels = scene.chunks.at(pos);
-
-        for (int z = 0; z < scene::kChunkSize; ++z) {
-            for (int y = 0; y < scene::kChunkSize; ++y) {
-                for (int x = 0; x < scene::kChunkSize; ++x) {
-                    const size_t idx =
-                        static_cast<size_t>(x + y * scene::kChunkSize + z * scene::kChunkSize * scene::kChunkSize);
-                    const voxel::core::BlockId id = voxels[idx];
-                    if (id == 0 || id >= blocks_.blocks.size()) {
-                        continue;
-                    }
-                    const auto& def = blocks_.blocks[id];
-                    if (!def.solid) {
-                        continue;
-                    }
-
-                    const glm::vec3 blockOrigin = chunkOrigin + glm::vec3(static_cast<float>(x),
-                                                                           static_cast<float>(y),
-                                                                           static_cast<float>(z));
-
-                    for (size_t face = 0; face < kFaceNormals.size(); ++face) {
-                        const glm::ivec3 n = kFaceNormals[face];
-                        const int wx = pos.x * scene::kChunkSize + x + n.x;
-                        const int wy = pos.y * scene::kChunkSize + y + n.y;
-                        const int wz = pos.z * scene::kChunkSize + z + n.z;
-                        const voxel::core::BlockId neighbor = scene.blockAtWorld(wx, wy, wz);
-                        bool neighborSolid = false;
-                        if (neighbor != 0 && neighbor < blocks_.blocks.size()) {
-                            neighborSolid = blocks_.blocks[neighbor].solid &&
-                                            !blocks_.blocks[neighbor].transparent;
-                        }
-                        if (neighborSolid) {
-                            continue;
-                        }
-
-                        const FaceName faceName = faceNameForNormal(n);
-                        const std::string texName = textureNameForBlock(def, faceName);
-                        const float layer = static_cast<float>(textures_.layerForName(texName));
-
-                        glm::vec3 origin = blockOrigin;
-                        if (n.x > 0) {
-                            origin.x += 1.0f;
-                        }
-                        if (n.y > 0) {
-                            origin.y += 1.0f;
-                        }
-                        if (n.z > 0) {
-                            origin.z += 1.0f;
-                        }
-
-                        pushFace(vertices, origin, n, kFaceTangentU[face], kFaceTangentV[face], layer);
-                    }
-                }
-            }
+        vertices.reserve(meshVerts.size());
+        for (const voxel::world::MeshVertex& v : meshVerts) {
+            ChunkVertex cv{};
+            std::memcpy(cv.pos, v.pos, sizeof(cv.pos));
+            std::memcpy(cv.normal, v.normal, sizeof(cv.normal));
+            std::memcpy(cv.uv, v.uv, sizeof(cv.uv));
+            cv.texLayer = v.texLayer;
+            vertices.push_back(cv);
         }
 
         uploadMesh(mesh, vertices);
         meshes_.push_back(std::move(mesh));
     }
 
-    spdlog::info("ChunkRenderer: built {} chunk meshes", meshes_.size());
+    spdlog::info("ChunkRenderer: built {} chunk meshes (greedy)", meshes_.size());
 }
 
 void ChunkRenderer::draw(VkCommandBuffer cmd, const Camera& camera, float aspect, const Frustum& frustum,

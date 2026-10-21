@@ -1,16 +1,9 @@
 #pragma once
 
-#include "core/Blocks.h"
-
-#include <filesystem>
+#include "world/World.h"
 
 namespace voxel::core {
 
-// Simulation state container; expanded in later phases.
-struct World {
-    BlocksFile blocks;
-
-    void loadBlocks(const std::filesystem::path& path);
-};
+using World = voxel::world::World;
 
 } // namespace voxel::core

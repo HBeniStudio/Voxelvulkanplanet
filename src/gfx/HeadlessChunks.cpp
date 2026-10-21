@@ -68,14 +68,15 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     VkDevice device = ctx.device();
     VmaAllocator allocator = ctx.allocator();
 
-    voxel::core::World world;
+    voxel::world::World world;
     const std::filesystem::path blocksPath =
         std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
     world.loadBlocks(blocksPath);
 
     const std::filesystem::path texDir = std::filesystem::path(VOXEL_SOURCE_DIR) / "assets/textures";
     TextureArray textures(ctx, texDir.string());
-    const scene::TestCubeScene testScene = scene::TestCubeScene::build3x3x3Chunks();
+    scene::populateWorldFromTestCube(world);
+    world.chunkManager.waitForPendingMeshes();
 
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -195,7 +196,8 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     }
 
     ChunkRenderer renderer(ctx, renderPass, textures, world.blocks);
-    renderer.buildFromScene(testScene);
+    const auto blockQuery = [&world](int wx, int wy, int wz) { return world.getBlock(wx, wy, wz); };
+    renderer.buildFromChunkManager(world.chunkManager, blockQuery);
 
     Camera camera = makeTestCubeCamera();
 

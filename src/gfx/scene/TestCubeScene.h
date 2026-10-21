@@ -2,6 +2,10 @@
 
 #include "core/Blocks.h"
 
+namespace voxel::world {
+struct World;
+}
+
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -34,5 +38,7 @@ struct TestCubeScene {
     [[nodiscard]] voxel::core::BlockId blockAtWorld(int wx, int wy, int wz) const;
     [[nodiscard]] std::vector<ChunkPosKey> chunkPositions() const;
 };
+
+void populateWorldFromTestCube(voxel::world::World& world);
 
 } // namespace voxel::gfx::scene
