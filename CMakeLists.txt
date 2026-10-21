@@ -59,6 +59,7 @@ set(VOXEL_LIB_SOURCES
     src/core/Registry.cpp
     src/core/Log.cpp
     src/core/Config.cpp
+    src/core/Paths.cpp
     src/core/Blocks.cpp
     src/core/World.cpp
     src/core/ThreadPool.cpp

@@ -1,6 +1,7 @@
 #include "gfx/scene/TerrainScene.h"
 
 #include "core/Config.h"
+#include "core/Paths.h"
 #include "core/Registry.h"
 #include "gfx/TerrainCamera.h"
 #include "world/WorldSession.h"
@@ -10,8 +11,7 @@
 namespace voxel::gfx::scene {
 
 void setupTerrainWorld(voxel::world::World& world) {
-    const std::filesystem::path blocksPath =
-        std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
+    const std::filesystem::path blocksPath = voxel::core::contentRoot() / "data/blocks.json";
     world.loadBlocks(blocksPath);
     voxel::core::Registry::instance().runPhase(voxel::core::Phase::Startup, world, 0.0f);
 

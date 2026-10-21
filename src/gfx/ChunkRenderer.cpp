@@ -1,5 +1,6 @@
 #include "gfx/ChunkRenderer.h"
 
+#include "core/Paths.h"
 #include "gfx/GfxShaderUtil.h"
 #include "world/MeshVertices.h"
 
@@ -7,6 +8,7 @@
 
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <stdexcept>
 
 namespace voxel::gfx {
@@ -182,8 +184,9 @@ void ChunkRenderer::createPipeline(VkRenderPass renderPass) {
     write.pImageInfo = &imageInfo;
     vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
 
-    const std::string vertSpv = std::string(VOXEL_SHADER_DIR) + "/chunk.vert.spv";
-    const std::string fragSpv = std::string(VOXEL_SHADER_DIR) + "/chunk.frag.spv";
+    const std::filesystem::path shaderRoot = voxel::core::shaderDir();
+    const std::string vertSpv = (shaderRoot / "chunk.vert.spv").string();
+    const std::string fragSpv = (shaderRoot / "chunk.frag.spv").string();
     VkShaderModule vertModule = loadShaderModule(device, vertSpv.c_str());
     VkShaderModule fragModule = loadShaderModule(device, fragSpv.c_str());
 
