@@ -34,12 +34,24 @@ jobs:
         with:
           vulkan-query-version: 1.3.290.0
           vulkan-use-cache: true
+          vulkan-components: glslc
 
-      - name: Add Vulkan SDK tools to PATH
+      - name: Resolve glslc and update PATH
         shell: pwsh
         run: |
-          $bin = Join-Path $env:VULKAN_SDK "Bin"
-          Write-Host "Vulkan SDK Bin: $bin"
+          $candidates = @(
+            (Join-Path $env:VULKAN_SDK "Bin/glslc.exe"),
+            (Join-Path $env:VULKAN_SDK "bin/glslc.exe")
+          )
+          $glslc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $glslc) {
+            $glslc = (Get-ChildItem -Path $env:VULKAN_SDK -Filter glslc.exe -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -First 1 -ExpandProperty FullName)
+          }
+          if (-not $glslc) { throw "glslc.exe not found under VULKAN_SDK=$env:VULKAN_SDK" }
+          $bin = Split-Path -Parent $glslc
+          Write-Host "Using glslc: $glslc"
+          echo "GLSLC_EXECUTABLE=$glslc" >> $env:GITHUB_ENV
           echo "PATH=$bin;$env:PATH" >> $env:GITHUB_ENV
 
       - name: Prepare vcpkg binary cache directory
@@ -67,11 +79,10 @@ jobs:
         shell: pwsh
         run: |
           $vcpkg = "${{ github.workspace }}/vcpkg"
-          $glslc = Join-Path $env:VULKAN_SDK "Bin/glslc.exe"
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake" `
-            -DGLSLC_EXECUTABLE="$glslc"
+            -DGLSLC_EXECUTABLE="$env:GLSLC_EXECUTABLE"
 
       - name: Build
         shell: pwsh

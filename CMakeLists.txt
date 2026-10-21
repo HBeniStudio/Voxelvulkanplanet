@@ -29,7 +29,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(FastNoise2)
 
-find_program(GLSLC_EXECUTABLE glslc REQUIRED)
+if(DEFINED ENV{VULKAN_SDK})
+    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}/Bin" _vulkan_sdk_bin)
+    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}/bin" _vulkan_sdk_bin_lower)
+    list(APPEND CMAKE_PROGRAM_PATH "${_vulkan_sdk_bin}" "${_vulkan_sdk_bin_lower}")
+endif()
+find_program(GLSLC_EXECUTABLE NAMES glslc glslc.exe REQUIRED)
 
 set(SHADER_SOURCES
     shaders/tri.vert
