@@ -23,7 +23,7 @@ void setupTerrainWorld(voxel::world::World& world) {
         voxel::world::chunkPosFromWorldPosition(camera.position);
     world.chunkManager.updateAround(center, voxel::core::Config::active().streamHorizontalDistance,
                                     voxel::core::Config::active().streamVerticalDistance);
-    world.chunkManager.waitForPendingMeshes();
+    world.chunkManager.waitForPendingMeshes(60'000);
 }
 
 } // namespace voxel::gfx::scene

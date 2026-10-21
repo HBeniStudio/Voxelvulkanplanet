@@ -198,4 +198,5 @@ add_test(NAME voxel_tests COMMAND voxel_tests)
 set_tests_properties(voxel_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json"
+    TIMEOUT 180
 )

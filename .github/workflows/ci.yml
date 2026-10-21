@@ -8,6 +8,7 @@ on:
 jobs:
   linux-lavapipe:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     env:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
