@@ -55,7 +55,9 @@ public:
     [[nodiscard]] VkPipeline pipeline() const { return pipeline_; }
     [[nodiscard]] VkPipelineLayout layout() const { return pipelineLayout_; }
     [[nodiscard]] size_t chunkCount() const { return meshes_.size(); }
-    [[nodiscard]] size_t visibleChunkCount() const { return lastVisible_; }
+    [[nodiscard]] size_t nonEmptyChunkCount() const { return lastNonEmpty_; }
+    [[nodiscard]] size_t frustumVisibleChunkCount() const { return lastFrustumVisible_; }
+    [[nodiscard]] size_t drawnChunkCount() const { return lastDrawn_; }
 
 private:
     VkContext& ctx_;
@@ -67,7 +69,9 @@ private:
     VkDescriptorPool descriptorPool_ = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet_ = VK_NULL_HANDLE;
     std::vector<ChunkGpuMesh> meshes_;
-    size_t lastVisible_ = 0;
+    size_t lastNonEmpty_ = 0;
+    size_t lastFrustumVisible_ = 0;
+    size_t lastDrawn_ = 0;
 
     void createPipeline(VkRenderPass renderPass);
     void uploadMesh(ChunkGpuMesh& mesh, const std::vector<ChunkVertex>& vertices);

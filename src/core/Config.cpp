@@ -37,6 +37,16 @@ Config Config::parse(int argc, char** argv) {
                 throw std::runtime_error("--log-level requires a value");
             }
             cfg.logLevel = argv[++i];
+        } else if (std::strcmp(arg, "--width") == 0) {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("--width requires a value");
+            }
+            cfg.renderWidth = static_cast<uint32_t>(std::stoul(argv[++i]));
+        } else if (std::strcmp(arg, "--height") == 0) {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("--height requires a value");
+            }
+            cfg.renderHeight = static_cast<uint32_t>(std::stoul(argv[++i]));
         } else if (std::strcmp(arg, "--scene") == 0) {
             if (i + 1 >= argc) {
                 throw std::runtime_error("--scene requires a value");

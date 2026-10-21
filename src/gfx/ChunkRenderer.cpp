@@ -390,7 +390,9 @@ void ChunkRenderer::buildFromScene(const scene::TestCubeScene& scene) {
 
 void ChunkRenderer::draw(VkCommandBuffer cmd, const Camera& camera, float aspect, const Frustum& frustum,
                          const ChunkPushConstants& extra) {
-    lastVisible_ = 0;
+    lastNonEmpty_ = 0;
+    lastFrustumVisible_ = 0;
+    lastDrawn_ = 0;
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout_, 0, 1, &descriptorSet_,
                             0, nullptr);
@@ -400,10 +402,12 @@ void ChunkRenderer::draw(VkCommandBuffer cmd, const Camera& camera, float aspect
         if (mesh.vertexCount == 0) {
             continue;
         }
+        ++lastNonEmpty_;
         if (!frustum.intersectsAabb(mesh.bounds)) {
             continue;
         }
-        ++lastVisible_;
+        ++lastFrustumVisible_;
+        ++lastDrawn_;
 
         ChunkPushConstants pc = extra;
         pc.mvp = vp;

@@ -7,6 +7,7 @@
 #include "gfx/ChunkRenderer.h"
 #include "gfx/Frustum.h"
 #include "gfx/TextureArray.h"
+#include "gfx/TestCubeCamera.h"
 #include "gfx/scene/TestCubeScene.h"
 
 #include <spdlog/spdlog.h>
@@ -196,13 +197,7 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     ChunkRenderer renderer(ctx, renderPass, textures, world.blocks);
     renderer.buildFromScene(testScene);
 
-    Camera camera;
-    camera.position = glm::dvec3(26.0, 22.0, 42.0);
-    camera.yaw = -125.0f;
-    camera.pitch = -18.0f;
-    camera.fovYDegrees = 55.0f;
-    camera.nearPlane = 0.1f;
-    camera.farPlane = 256.0f;
+    Camera camera = makeTestCubeCamera();
 
     Frustum frustum;
     const float aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -322,8 +317,10 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
 
     vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
 
-    spdlog::info("test_cube chunks: total={} visible={}", renderer.chunkCount(),
-                 renderer.visibleChunkCount());
+    spdlog::info(
+        "test_cube culling: registered={} non_empty={} frustum_pass={} drawn={}",
+        renderer.chunkCount(), renderer.nonEmptyChunkCount(), renderer.frustumVisibleChunkCount(),
+        renderer.drawnChunkCount());
 
     const VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * 4;
     VkBuffer stagingBuffer = VK_NULL_HANDLE;

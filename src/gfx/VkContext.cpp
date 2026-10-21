@@ -35,6 +35,10 @@ VkContext::~VkContext() {
 }
 
 bool VkContext::initialize(bool enableValidation) {
+    return initializeForSurface(enableValidation, VK_NULL_HANDLE);
+}
+
+bool VkContext::initializeForSurface(bool enableValidation, VkSurfaceKHR surface) {
     if (device_ != VK_NULL_HANDLE) {
         return true;
     }
@@ -44,11 +48,13 @@ bool VkContext::initialize(bool enableValidation) {
         return false;
     }
 
+    const bool headless = surface == VK_NULL_HANDLE;
+
     vkb::InstanceBuilder builder;
     builder.set_app_name("voxel")
         .require_api_version(1, 2, 0)
         .set_minimum_instance_version(1, 2, 0)
-        .set_headless(true);
+        .set_headless(headless);
 
     validationEnabled_ = enableValidation;
     if (enableValidation) {
@@ -66,9 +72,12 @@ bool VkContext::initialize(bool enableValidation) {
     volkLoadInstance(instance_);
 
     vkb::PhysicalDeviceSelector selector{vkbInstance_};
-    selector.set_minimum_version(1, 2)
-        .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
-        .require_present(false);
+    selector.set_minimum_version(1, 2).prefer_gpu_device_type(vkb::PreferredDeviceType::discrete);
+    if (headless) {
+        selector.require_present(false);
+    } else {
+        selector.set_surface(surface).require_present(true);
+    }
 
     auto physResult = selector.select();
     if (!physResult) {
@@ -97,6 +106,20 @@ bool VkContext::initialize(bool enableValidation) {
     }
     graphicsQueue_ = queuePair->first;
     graphicsQueueFamily_ = queuePair->second;
+
+    if (!headless) {
+        const auto presentPair = vkbDevice_.get_queue_and_index(vkb::QueueType::present);
+        if (!presentPair) {
+            spdlog::error("Present queue: {}", presentPair.error().message());
+            return false;
+        }
+        presentQueue_ = presentPair->first;
+        presentQueueFamily_ = presentPair->second;
+    } else {
+        presentQueue_ = graphicsQueue_;
+        presentQueueFamily_ = graphicsQueueFamily_;
+    }
+
     volkLoadDevice(device_);
 
     VmaAllocatorCreateInfo allocInfo{};
@@ -117,7 +140,8 @@ bool VkContext::initialize(bool enableValidation) {
         return false;
     }
 
-    spdlog::info("Vulkan 1.2 device ready (queue family {})", graphicsQueueFamily_);
+    spdlog::info("Vulkan 1.2 device ready (graphics family {}, present family {})",
+                 graphicsQueueFamily_, presentQueueFamily_);
     return true;
 }
 

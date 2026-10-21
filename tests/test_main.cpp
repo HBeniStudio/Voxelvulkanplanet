@@ -7,7 +7,9 @@
 #include "core/World.h"
 #include "gfx/Frustum.h"
 #include "gfx/Headless.h"
+#include "gfx/TestCubeCamera.h"
 #include "gfx/VkContext.h"
+#include "gfx/scene/TestCubeScene.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -49,6 +51,30 @@ TEST_CASE("blocks.json schema v1 loads and validates frozen ids 0..12") {
     for (voxel::core::BlockId id = 0; id <= 12; ++id) {
         CHECK(world.blocks.blocks[id].id == id);
     }
+}
+
+TEST_CASE("test_cube chunk frustums all intersect default camera") {
+    const voxel::gfx::Camera camera = voxel::gfx::makeTestCubeCamera();
+    voxel::gfx::Frustum frustum;
+    frustum.extractFromMatrix(camera.viewProjection(1.0f));
+
+    int inside = 0;
+    for (int cz = -1; cz <= 1; ++cz) {
+        for (int cy = -1; cy <= 1; ++cy) {
+            for (int cx = -1; cx <= 1; ++cx) {
+                const glm::vec3 origin(static_cast<float>(cx * voxel::gfx::scene::kChunkSize),
+                                       static_cast<float>(cy * voxel::gfx::scene::kChunkSize),
+                                       static_cast<float>(cz * voxel::gfx::scene::kChunkSize));
+                const voxel::gfx::Aabb bounds{origin,
+                                              origin + glm::vec3(voxel::gfx::scene::kChunkSize)};
+                if (frustum.intersectsAabb(bounds)) {
+                    ++inside;
+                }
+            }
+        }
+    }
+    CHECK(inside >= 26);
+    CHECK(inside <= 27);
 }
 
 TEST_CASE("frustum intersects axis-aligned boxes") {

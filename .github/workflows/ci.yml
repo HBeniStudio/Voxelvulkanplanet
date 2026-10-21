@@ -61,18 +61,26 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-      - name: Headless render
+      - name: Headless render (triangle)
         run: |
           set -o pipefail
-          ./build/voxel --headless --frames 1 --out build/ci_frame.png 2>&1 | tee build/headless.log
+          ./build/voxel --headless --frames 1 --out build/ci_frame.png 2>&1 | tee build/headless_triangle.log
 
-      - name: Golden image diff
+      - name: Golden image diff (triangle)
         run: python3 tools/golden_diff.py build/ci_frame.png tests/golden/triangle.png
+
+      - name: Headless render (test_cube)
+        run: |
+          set -o pipefail
+          ./build/voxel --headless --scene test_cube --frames 1 --out build/ci_test_cube.png 2>&1 | tee build/headless_test_cube.log
+
+      - name: Golden image diff (test_cube)
+        run: python3 tools/golden_diff.py build/ci_test_cube.png tests/golden/test_cube.png
 
       - name: Fail on Vulkan validation errors
         run: |
-          if grep -E 'Validation Error' build/headless.log; then
+          if grep -E 'Validation Error' build/headless_triangle.log build/headless_test_cube.log; then
             echo "Vulkan validation errors detected"
             exit 1
           fi
-          echo "No validation errors in headless log"
+          echo "No validation errors in headless logs"

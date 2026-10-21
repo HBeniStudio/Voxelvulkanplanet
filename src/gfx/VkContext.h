@@ -16,13 +16,16 @@ public:
     VkContext& operator=(const VkContext&) = delete;
 
     bool initialize(bool enableValidation = true);
+    bool initializeForSurface(bool enableValidation, VkSurfaceKHR surface);
     void shutdown();
 
     [[nodiscard]] VkInstance instance() const { return instance_; }
     [[nodiscard]] VkPhysicalDevice physicalDevice() const { return physicalDevice_; }
     [[nodiscard]] VkDevice device() const { return device_; }
     [[nodiscard]] VkQueue graphicsQueue() const { return graphicsQueue_; }
+    [[nodiscard]] VkQueue presentQueue() const { return presentQueue_; }
     [[nodiscard]] uint32_t graphicsQueueFamily() const { return graphicsQueueFamily_; }
+    [[nodiscard]] uint32_t presentQueueFamily() const { return presentQueueFamily_; }
     [[nodiscard]] VmaAllocator allocator() const { return allocator_; }
 
 private:
@@ -30,7 +33,9 @@ private:
     VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
     VkDevice device_ = VK_NULL_HANDLE;
     VkQueue graphicsQueue_ = VK_NULL_HANDLE;
+    VkQueue presentQueue_ = VK_NULL_HANDLE;
     uint32_t graphicsQueueFamily_ = 0;
+    uint32_t presentQueueFamily_ = 0;
     VmaAllocator allocator_ = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger_ = VK_NULL_HANDLE;
     bool validationEnabled_ = false;

@@ -14,21 +14,21 @@ TestCubeScene TestCubeScene::build3x3x3Chunks() {
         }
     }
 
-    auto& center = scene.chunks[{0, 0, 0}];
-    for (int z = 12; z < 20; ++z) {
-        for (int y = 12; y < 20; ++y) {
-            for (int x = 12; x < 20; ++x) {
-                const size_t idx = static_cast<size_t>(x + y * kChunkSize + z * kChunkSize * kChunkSize);
-                const int edge = (x == 12 || x == 19 || y == 12 || y == 19 || z == 12 || z == 19) ? 1 : 0;
-                center[idx] = edge ? static_cast<voxel::core::BlockId>(3) : static_cast<voxel::core::BlockId>(1);
+    for (auto& [pos, voxels] : scene.chunks) {
+        const int index = (pos.x + 1) + (pos.y + 1) * 3 + (pos.z + 1) * 9;
+        const voxel::core::BlockId shell = static_cast<voxel::core::BlockId>(1 + (index % 4));
+        const voxel::core::BlockId core = static_cast<voxel::core::BlockId>(2 + (index % 3));
+        for (int z = 13; z < 19; ++z) {
+            for (int y = 13; y < 19; ++y) {
+                for (int x = 13; x < 19; ++x) {
+                    const size_t idx =
+                        static_cast<size_t>(x + y * kChunkSize + z * kChunkSize * kChunkSize);
+                    const bool edge = x == 13 || x == 18 || y == 13 || y == 18 || z == 13 || z == 18;
+                    voxels[idx] = edge ? shell : core;
+                }
             }
         }
     }
-
-    auto& east = scene.chunks[{1, 0, 0}];
-    east[16 + 16 * kChunkSize + 16 * kChunkSize * kChunkSize] = 2;
-    auto& north = scene.chunks[{0, 0, 1}];
-    north[16 + 16 * kChunkSize + 16 * kChunkSize * kChunkSize] = 4;
 
     return scene;
 }
