@@ -11,6 +11,7 @@
 #include "gfx/TestCubeCamera.h"
 #include "gfx/scene/TerrainScene.h"
 #include "gfx/scene/TestCubeScene.h"
+#include "world/WorldSession.h"
 
 #include <spdlog/spdlog.h>
 
@@ -391,6 +392,8 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     }
     spdlog::info("Wrote {} ({}x{}, {} frame(s), scene={})", outPath, width, height, frames,
                  terrainScene ? "terrain" : "test_cube");
+
+    voxel::world::WorldSession::clearActive();
 
     vmaDestroyBuffer(allocator, stagingBuffer, stagingAlloc);
     vkDestroyFence(device, fence, nullptr);

@@ -10,6 +10,7 @@ namespace voxel::world {
 class WorldSession {
 public:
     static void setActive(World* world);
+    static void clearActive();
     [[nodiscard]] static World* active();
 
     static void setStreamingPosition(const glm::dvec3& position);

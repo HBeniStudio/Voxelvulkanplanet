@@ -2,10 +2,20 @@
 
 #include "world/Mesher.h"
 
+#include <spdlog/spdlog.h>
+
+#include <chrono>
 #include <cmath>
 #include <thread>
 
 namespace voxel::world {
+
+ChunkManager::ChunkManager() = default;
+
+ChunkManager::~ChunkManager() {
+    waitForPendingMeshes(300'000);
+    pool_.waitIdle(std::chrono::milliseconds(300'000));
+}
 
 void ChunkManager::setWorldGen(const IWorldGen* generator, uint64_t seed) {
     std::lock_guard lock(mutex_);
@@ -68,7 +78,6 @@ void ChunkManager::updateAround(const ChunkPos& center, int horizontalDistance, 
         for (int dy = -verticalDistance; dy <= verticalDistance; ++dy) {
             for (int dx = -horizontalDistance; dx <= horizontalDistance; ++dx) {
                 ensureLoaded({center.x + dx, center.y + dy, center.z + dz});
-                pumpCompletedMeshes();
             }
         }
     }
@@ -94,6 +103,12 @@ voxel::core::BlockId ChunkManager::queryWorld(int wx, int wy, int wz) const {
 
 void ChunkManager::requestRemesh(ChunkPos pos) {
     if (blocks_ == nullptr) {
+        std::lock_guard lock(mutex_);
+        const auto it = chunks_.find(pos);
+        if (it != chunks_.end()) {
+            it->second.meshReady = true;
+            it->second.meshing = false;
+        }
         return;
     }
     ChunkStorage storageCopy;
@@ -212,24 +227,65 @@ const std::vector<MeshQuad>& ChunkManager::meshQuads(ChunkPos pos) const {
     return it->second.quads;
 }
 
-void ChunkManager::waitForPendingMeshes(int maxIterations) {
-    for (int i = 0; i < maxIterations; ++i) {
-        pumpCompletedMeshes();
-        bool pending = false;
-        {
-            std::lock_guard lock(mutex_);
-            for (const auto& [_, entry] : chunks_) {
-                if (entry.meshing || !entry.meshReady) {
-                    pending = true;
-                    break;
-                }
+bool ChunkManager::hasMeshingChunks() const {
+    std::lock_guard lock(mutex_);
+    for (const auto& [_, entry] : chunks_) {
+        if (entry.meshing) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ChunkManager::logMeshStatus() const {
+    size_t loaded = 0;
+    size_t meshed = 0;
+    size_t meshing = 0;
+    {
+        std::lock_guard lock(mutex_);
+        loaded = chunks_.size();
+        for (const auto& [_, entry] : chunks_) {
+            if (entry.meshReady) {
+                ++meshed;
+            }
+            if (entry.meshing) {
+                ++meshing;
             }
         }
-        if (!pending) {
-            return;
+    }
+    spdlog::info("ChunkManager: {} loaded, {} meshed, {} meshing", loaded, meshed, meshing);
+}
+
+void ChunkManager::waitForPendingMeshes(int maxWaitMs) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(maxWaitMs);
+    while (std::chrono::steady_clock::now() < deadline) {
+        pumpCompletedMeshes();
+        while (pool_.tryExecuteOne()) {
+        }
+        if (!hasMeshingChunks()) {
+            pool_.waitIdle(std::chrono::milliseconds(50));
+            pumpCompletedMeshes();
+            if (!hasMeshingChunks()) {
+                return;
+            }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
+
+    spdlog::warn("ChunkManager: mesh wait timed out after {} ms; clearing stuck meshing flags", maxWaitMs);
+    {
+        std::lock_guard lock(mutex_);
+        for (auto& [_, entry] : chunks_) {
+            if (entry.meshing) {
+                entry.meshing = false;
+                entry.meshReady = true;
+            }
+        }
+    }
+    while (pool_.tryExecuteOne()) {
+    }
+    pumpCompletedMeshes();
+    pool_.waitIdle(std::chrono::milliseconds(60'000));
 }
 
 const ChunkStorage* ChunkManager::chunkStorage(ChunkPos pos) const {

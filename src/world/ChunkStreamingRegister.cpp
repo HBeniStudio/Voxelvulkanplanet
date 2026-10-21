@@ -14,7 +14,7 @@ public:
         }
         voxel::world::World* world = voxel::world::WorldSession::active();
         if (world == nullptr) {
-            world = &fallbackWorld;
+            return;
         }
         if (!voxel::world::WorldSession::hasStreamingPosition()) {
             return;

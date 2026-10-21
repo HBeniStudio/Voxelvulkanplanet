@@ -81,7 +81,7 @@ jobs:
       - name: Headless render (terrain seed 42)
         run: |
           set -o pipefail
-          ./build/voxel --headless --scene terrain --seed 42 --stream-distance 4 --frames 1 --width 256 --height 256 --out build/ci_terrain_seed42.png 2>&1 | tee build/headless_terrain.log
+          timeout 300 ./build/voxel --headless --scene terrain --seed 42 --stream-distance 4 --frames 1 --width 256 --height 256 --out build/ci_terrain_seed42.png 2>&1 | tee build/headless_terrain.log
 
       - name: Golden image diff (terrain_seed42)
         run: python3 tools/golden_diff.py build/ci_terrain_seed42.png tests/golden/terrain_seed42.png

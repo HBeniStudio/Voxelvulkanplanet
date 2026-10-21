@@ -12,6 +12,11 @@ void WorldSession::setActive(World* world) {
     activeWorld_ = world;
 }
 
+void WorldSession::clearActive() {
+    activeWorld_ = nullptr;
+    hasStreamingPosition_ = false;
+}
+
 World* WorldSession::active() {
     return activeWorld_;
 }
