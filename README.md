@@ -43,7 +43,17 @@ Declared in code where P1 files allow; the rest are specified here until later h
 
 Block ids 0–12: air, stone, dirt, grass, sand, water, log, leaves, coal_ore, iron_ore, bedrock, planks, crafting_table.
 
-**Note (Half A):** FastNoise2 is planned for P4 but has no upstream vcpkg port yet; it will be added via overlay or FetchContent in a follow-up (see PR wishlist).
+## Tests and CI
+
+```bash
+ctest --test-dir build --output-on-failure
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json ./build/voxel --headless --frames 1 --out build/ci_frame.png
+python3 tools/golden_diff.py build/ci_frame.png tests/golden/triangle.png
+```
+
+GitHub Actions (`ubuntu-24.04`, lavapipe) runs build, `ctest`, headless render, golden diff, and fails on Vulkan validation errors in the log.
+
+**Wishlist:** FastNoise2 (no upstream vcpkg port yet) via overlay or FetchContent in a later change.
 
 ## License
 
