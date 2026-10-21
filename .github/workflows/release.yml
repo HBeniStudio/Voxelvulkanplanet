@@ -23,6 +23,10 @@ jobs:
       - name: MSVC dev environment
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Reset VCPKG_ROOT for workspace clone
+        shell: pwsh
+        run: echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $env:GITHUB_ENV
+
       - name: Install Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
@@ -44,17 +48,19 @@ jobs:
       - name: Bootstrap vcpkg
         shell: pwsh
         run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT
-          git -C $env:VCPKG_ROOT fetch --depth 1 origin a2f9862da6d88040a8537fb9b8cb24deaa9a196b
-          git -C $env:VCPKG_ROOT checkout a2f9862da6d88040a8537fb9b8cb24deaa9a196b
-          & "$env:VCPKG_ROOT/bootstrap-vcpkg.bat" -disableMetrics
+          $vcpkg = "${{ github.workspace }}/vcpkg"
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git $vcpkg
+          git -C $vcpkg fetch --depth 1 origin a2f9862da6d88040a8537fb9b8cb24deaa9a196b
+          git -C $vcpkg checkout a2f9862da6d88040a8537fb9b8cb24deaa9a196b
+          & "$vcpkg/bootstrap-vcpkg.bat" -disableMetrics
 
       - name: Configure
         shell: pwsh
         run: |
+          $vcpkg = "${{ github.workspace }}/vcpkg"
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+            -DCMAKE_TOOLCHAIN_FILE="$vcpkg/scripts/buildsystems/vcpkg.cmake"
 
       - name: Build
         shell: pwsh
@@ -94,7 +100,6 @@ jobs:
 
   linux:
     runs-on: ubuntu-24.04
-    continue-on-error: true
     timeout-minutes: 25
     env:
       VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
@@ -172,10 +177,12 @@ jobs:
 
       - name: Download Linux package
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: voxel-linux-x64
           path: dist
+
+      - name: List release assets
+        run: ls -la dist/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -183,5 +190,7 @@ jobs:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.0' }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.0' }}
           body_path: docs/release-notes-v0.1.0.md
-          files: dist/*
-          fail_on_unmatched_files: false
+          files: |
+            dist/voxel-v0.1.0-windows-x64.zip
+            dist/voxel-v0.1.0-linux-x64.tar.gz
+          fail_on_unmatched_files: true
