@@ -2,6 +2,7 @@
 
 #include "core/Blocks.h"
 #include "core/Config.h"
+#include "core/Paths.h"
 #include "core/Registry.h"
 #include "core/World.h"
 #include "gfx/Camera.h"
@@ -104,13 +105,13 @@ int runDesktopApp(const voxel::core::Config& cfg) {
 
     VkContext ctx;
     Swapchain swapchain(ctx, window);
-    const std::filesystem::path texDir = std::filesystem::path(VOXEL_SOURCE_DIR) / "assets/textures";
+    const std::filesystem::path texDir = voxel::core::contentRoot() / "assets/textures";
     TextureArray textures(ctx, texDir.string());
     if (terrainScene) {
         scene::setupTerrainWorld(world);
         voxel::world::WorldSession::setActive(&world);
     } else {
-        world.loadBlocks(std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json");
+        world.loadBlocks(voxel::core::contentRoot() / "data/blocks.json");
         scene::populateWorldFromTestCube(world);
         world.chunkManager.waitForPendingMeshes();
     }

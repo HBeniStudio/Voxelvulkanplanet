@@ -2,6 +2,7 @@
 
 #include "core/Blocks.h"
 #include "core/Config.h"
+#include "core/Paths.h"
 #include "core/World.h"
 #include "gfx/Camera.h"
 #include "gfx/ChunkRenderer.h"
@@ -74,13 +75,12 @@ void runHeadlessTestCubeScene(VkContext& ctx, int frames, uint32_t width, uint32
     const bool terrainScene = voxel::core::Config::active().scene == "terrain";
 
     voxel::world::World world;
-    const std::filesystem::path texDir = std::filesystem::path(VOXEL_SOURCE_DIR) / "assets/textures";
+    const std::filesystem::path texDir = voxel::core::contentRoot() / "assets/textures";
     TextureArray textures(ctx, texDir.string());
     if (terrainScene) {
         scene::setupTerrainWorld(world);
     } else {
-        const std::filesystem::path blocksPath =
-            std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
+        const std::filesystem::path blocksPath = voxel::core::contentRoot() / "data/blocks.json";
         world.loadBlocks(blocksPath);
         scene::populateWorldFromTestCube(world);
         world.chunkManager.waitForPendingMeshes();

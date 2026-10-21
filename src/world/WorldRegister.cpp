@@ -1,4 +1,5 @@
 #include "core/Config.h"
+#include "core/Paths.h"
 #include "core/Registry.h"
 #include "gen/Biomes.h"
 #include "gen/TerrainGen.h"
@@ -18,10 +19,9 @@ public:
     void update(voxel::core::World& world, float) override {
         const voxel::core::Config& cfg = voxel::core::Config::active();
         if (cfg.scene == "terrain") {
-            const std::filesystem::path blocksPath =
-                std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
-            const std::filesystem::path worldGenPath =
-                std::filesystem::path(VOXEL_SOURCE_DIR) / "data/biomes.json";
+            const std::filesystem::path root = voxel::core::contentRoot();
+            const std::filesystem::path blocksPath = root / "data/blocks.json";
+            const std::filesystem::path worldGenPath = root / "data/biomes.json";
             world.loadBlocks(blocksPath);
             const voxel::gen::WorldGenData data = voxel::gen::loadWorldGenJson(worldGenPath);
             const std::string err = voxel::gen::validateWorldGenSchemaV1(data, world.blocks);

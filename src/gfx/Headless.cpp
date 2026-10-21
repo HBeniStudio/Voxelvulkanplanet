@@ -2,6 +2,7 @@
 
 #include "core/Config.h"
 #include "core/Log.h"
+#include "core/Paths.h"
 #include "core/Registry.h"
 #include "gfx/HeadlessChunks.h"
 
@@ -12,6 +13,7 @@
 
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <vector>
@@ -78,8 +80,9 @@ void Headless::run(int frames, uint32_t width, uint32_t height, const std::strin
     VkDevice device = ctx_.device();
     VmaAllocator allocator = ctx_.allocator();
 
-    const std::string vertSpv = std::string(VOXEL_SHADER_DIR) + "/tri.vert.spv";
-    const std::string fragSpv = std::string(VOXEL_SHADER_DIR) + "/tri.frag.spv";
+    const std::filesystem::path shaderRoot = voxel::core::shaderDir();
+    const std::string vertSpv = (shaderRoot / "tri.vert.spv").string();
+    const std::string fragSpv = (shaderRoot / "tri.frag.spv").string();
 
     VkShaderModule vertModule = loadShaderModule(device, vertSpv.c_str());
     VkShaderModule fragModule = loadShaderModule(device, fragSpv.c_str());
