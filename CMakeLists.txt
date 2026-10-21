@@ -16,6 +16,19 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 
+include(FetchContent)
+set(FASTNOISE2_TOOLS OFF CACHE BOOL "" FORCE)
+set(FASTNOISE2_TESTS OFF CACHE BOOL "" FORCE)
+set(FASTNOISE2_UTILITY OFF CACHE BOOL "" FORCE)
+set(FASTNOISE2_STRICT_FP ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    FastNoise2
+    GIT_REPOSITORY https://github.com/Auburn/FastNoise2.git
+    GIT_TAG v1.1.1
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(FastNoise2)
+
 find_program(GLSLC_EXECUTABLE glslc REQUIRED)
 
 set(SHADER_SOURCES
@@ -58,6 +71,11 @@ set(VOXEL_LIB_SOURCES
     src/world/FlatWorldGen.cpp
     src/world/RegionFile.cpp
     src/world/WorldRegister.cpp
+    src/gen/Biomes.cpp
+    src/gen/TerrainGen.cpp
+    src/gen/Caves.cpp
+    src/gen/Ores.cpp
+    src/gen/Trees.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
     src/gfx/HeadlessChunks.cpp
@@ -100,6 +118,7 @@ target_link_libraries(voxel PRIVATE
     glm::glm
     nlohmann_json::nlohmann_json
     spdlog::spdlog
+    FastNoise
 )
 
 if(WIN32)
@@ -129,6 +148,7 @@ target_link_libraries(voxel_desktop PRIVATE
     glm::glm
     nlohmann_json::nlohmann_json
     spdlog::spdlog
+    FastNoise
 )
 if(WIN32)
     target_compile_definitions(voxel_desktop PRIVATE NOMINMAX)
@@ -139,6 +159,7 @@ add_executable(voxel_tests
     tests/test_storage.cpp
     tests/test_mesher.cpp
     tests/test_region.cpp
+    tests/test_gen.cpp
     ${VOXEL_LIB_SOURCES}
 )
 add_dependencies(voxel_tests shaders)
@@ -164,6 +185,7 @@ target_link_libraries(voxel_tests PRIVATE
     glm::glm
     nlohmann_json::nlohmann_json
     spdlog::spdlog
+    FastNoise
 )
 
 enable_testing()
