@@ -48,6 +48,9 @@ set(VOXEL_LIB_SOURCES
     src/core/Config.cpp
     src/core/Blocks.cpp
     src/core/World.cpp
+    src/world/Chunk.cpp
+    src/world/ChunkStorage.cpp
+    src/world/Mesher.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
     src/gfx/HeadlessChunks.cpp
@@ -123,7 +126,12 @@ if(WIN32)
     target_compile_definitions(voxel_desktop PRIVATE NOMINMAX)
 endif()
 
-add_executable(voxel_tests tests/test_main.cpp ${VOXEL_LIB_SOURCES})
+add_executable(voxel_tests
+    tests/test_main.cpp
+    tests/test_storage.cpp
+    tests/test_mesher.cpp
+    ${VOXEL_LIB_SOURCES}
+)
 add_dependencies(voxel_tests shaders)
 
 target_include_directories(voxel_tests PRIVATE
