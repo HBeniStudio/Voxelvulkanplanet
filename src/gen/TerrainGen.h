@@ -22,6 +22,8 @@ private:
     WorldGenData data_;
     FastNoise::SmartNode<> heightNoise_;
     FastNoise::SmartNode<> biomeNoise_;
+    FastNoise::SmartNode<> caveNoise_;
+    FastNoise::SmartNode<> oreNoise_;
 
     [[nodiscard]] int surfaceHeightAt(int wx, int wz, uint64_t seed) const;
 };

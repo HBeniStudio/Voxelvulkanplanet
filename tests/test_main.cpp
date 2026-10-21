@@ -42,15 +42,17 @@ TEST_CASE("registry preserves registration order within a phase") {
     CHECK(posA < posB);
 }
 
-TEST_CASE("blocks.json schema v1 loads and validates frozen ids 0..12") {
+TEST_CASE("blocks.json schema v1 loads and validates frozen ids 0..16") {
     const std::filesystem::path path = std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json";
     voxel::core::World world;
     world.loadBlocks(path);
     CHECK(world.blocks.schema == 1);
-    CHECK(world.blocks.blocks.size() == 13);
-    for (voxel::core::BlockId id = 0; id <= 12; ++id) {
+    CHECK(world.blocks.blocks.size() == 17);
+    for (voxel::core::BlockId id = 0; id <= 16; ++id) {
         CHECK(world.blocks.blocks[id].id == id);
     }
+    CHECK(world.blocks.blocks[13].name == "pine_log");
+    CHECK(world.blocks.blocks[16].name == "snow");
 }
 
 TEST_CASE("test_cube chunk frustums all intersect default camera") {

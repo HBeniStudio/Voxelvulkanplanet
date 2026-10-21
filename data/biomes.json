@@ -49,7 +49,9 @@
       "height_base": 108,
       "height_amplitude": 48,
       "tree_density": 0.008,
-      "noise_frequency": 1.4
+      "noise_frequency": 1.4,
+      "snow_line": 100,
+      "snow_block": 16
     }
   ],
   "ores": [

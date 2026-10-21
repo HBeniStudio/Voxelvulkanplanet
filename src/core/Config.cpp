@@ -54,10 +54,25 @@ Config Config::parse(int argc, char** argv) {
             cfg.scene = argv[++i];
         } else if (std::strcmp(arg, "--planet-curvature") == 0) {
             cfg.planetCurvature = true;
+        } else if (std::strcmp(arg, "--stream-distance") == 0) {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("--stream-distance requires a value");
+            }
+            const int distance = std::stoi(argv[++i]);
+            if (distance < 1) {
+                throw std::runtime_error("--stream-distance must be >= 1");
+            }
+            cfg.streamHorizontalDistance = distance;
+            cfg.streamVerticalDistance = std::max(1, distance / 2);
+        } else if (std::strcmp(arg, "--seed") == 0) {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("--seed requires a value");
+            }
+            cfg.worldSeed = static_cast<uint64_t>(std::stoull(argv[++i]));
         } else if (std::strcmp(arg, "--help") == 0 || std::strcmp(arg, "-h") == 0) {
             throw std::runtime_error(
                 "usage: voxel [--headless] [--frames N] [--out path.png] [--scene name] "
-                "[--log-level level] [--planet-curvature]");
+                "[--seed N] [--log-level level] [--planet-curvature]");
         } else {
             throw std::runtime_error(std::string("unknown argument: ") + arg);
         }

@@ -12,10 +12,10 @@ namespace {
 
 using json = nlohmann::json;
 
-const std::array<const char*, 13> kFrozenNames = {
+const std::array<const char*, 17> kFrozenNames = {
     "air",         "stone",       "dirt",        "grass",      "sand",        "water",
     "log",         "leaves",      "coal_ore",    "iron_ore",   "bedrock",     "planks",
-    "crafting_table",
+    "crafting_table", "pine_log", "pine_leaves", "cactus",     "snow",
 };
 
 BlockDef parseBlock(const json& node) {
@@ -61,8 +61,9 @@ std::string validateBlocksSchemaV1(const BlocksFile& file) {
     if (file.schema != 1) {
         return "schema must be 1";
     }
-    if (file.blocks.size() != 13) {
-        return "expected exactly 13 blocks (ids 0..12)";
+    if (file.blocks.size() != kFrozenNames.size()) {
+        return "expected exactly " + std::to_string(kFrozenNames.size()) + " blocks (ids 0.." +
+               std::to_string(kFrozenNames.size() - 1) + ")";
     }
     std::unordered_set<BlockId> seen;
     for (size_t i = 0; i < file.blocks.size(); ++i) {

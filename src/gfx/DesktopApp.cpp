@@ -11,7 +11,10 @@
 #include "gfx/VkContext.h"
 #include "gfx/TestCubeCamera.h"
 #include "gfx/TextureArray.h"
+#include "gfx/scene/TerrainScene.h"
 #include "gfx/scene/TestCubeScene.h"
+#include "gfx/TerrainCamera.h"
+#include "world/WorldSession.h"
 
 #include <spdlog/spdlog.h>
 
@@ -76,10 +79,11 @@ void updateFreeFlyCamera(Camera& camera, GLFWwindow* window, float dt) {
 } // namespace
 
 int runDesktopApp(const voxel::core::Config& cfg) {
-    if (cfg.scene != "test_cube") {
-        spdlog::error("desktop mode currently supports --scene test_cube only");
+    if (cfg.scene != "test_cube" && cfg.scene != "terrain") {
+        spdlog::error("desktop mode supports --scene test_cube or --scene terrain");
         return 1;
     }
+    const bool terrainScene = cfg.scene == "terrain";
 
     if (!glfwInit()) {
         spdlog::error("glfwInit failed");
@@ -97,19 +101,25 @@ int runDesktopApp(const voxel::core::Config& cfg) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     voxel::core::World world;
-    world.loadBlocks(std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json");
 
     VkContext ctx;
     Swapchain swapchain(ctx, window);
     const std::filesystem::path texDir = std::filesystem::path(VOXEL_SOURCE_DIR) / "assets/textures";
     TextureArray textures(ctx, texDir.string());
-    scene::populateWorldFromTestCube(world);
-    world.chunkManager.waitForPendingMeshes();
+    if (terrainScene) {
+        scene::setupTerrainWorld(world);
+        voxel::world::WorldSession::setActive(&world);
+    } else {
+        world.loadBlocks(std::filesystem::path(VOXEL_SOURCE_DIR) / "data/blocks.json");
+        scene::populateWorldFromTestCube(world);
+        world.chunkManager.waitForPendingMeshes();
+    }
     ChunkRenderer renderer(ctx, swapchain.renderPass(), textures, world.blocks);
     const auto blockQuery = [&world](int wx, int wy, int wz) { return world.getBlock(wx, wy, wz); };
     renderer.buildFromChunkManager(world.chunkManager, blockQuery);
 
-    Camera camera = makeTestCubeCamera();
+    Camera camera = terrainScene ? makeTerrainGoldenCamera() : makeTestCubeCamera();
+    size_t lastLoadedChunkCount = world.chunkManager.loadedChunkPositions().size();
 
     VkDevice device = ctx.device();
     VkCommandPool commandPool = VK_NULL_HANDLE;
@@ -167,6 +177,17 @@ int runDesktopApp(const voxel::core::Config& cfg) {
         const float dt = std::chrono::duration<float>(now - lastTime).count();
         lastTime = now;
         updateFreeFlyCamera(camera, window, dt);
+        if (terrainScene) {
+            voxel::world::WorldSession::setStreamingPosition(camera.position);
+            voxel::core::Registry::instance().runPhase(voxel::core::Phase::Update, world, dt);
+            const size_t loadedCount = world.chunkManager.loadedChunkPositions().size();
+            world.chunkManager.pumpCompletedMeshes();
+            if (loadedCount != lastLoadedChunkCount) {
+                world.chunkManager.waitForPendingMeshes();
+                renderer.buildFromChunkManager(world.chunkManager, blockQuery);
+                lastLoadedChunkCount = loadedCount;
+            }
+        }
         push.cameraCurvature = glm::vec4(glm::vec3(camera.position), push.cameraCurvature.w);
 
         vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);

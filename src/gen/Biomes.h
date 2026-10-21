@@ -31,6 +31,11 @@ struct BiomeDef {
     float height_amplitude = 8.0f;
     float tree_density = 0.0f;
     float noise_frequency = 1.0f;
+    // Optional (schema v1.1): when non-empty, only these tree archetype ids may spawn here.
+    std::vector<int> tree_ids;
+    bool has_snow_rule = false;
+    int snow_line = 0;
+    voxel::core::BlockId snow_block = 0;
 };
 
 struct OreDef {
@@ -69,5 +74,6 @@ struct WorldGenData {
                                                    const voxel::core::BlocksFile& blocks);
 
 [[nodiscard]] const BiomeDef& pickBiome(const WorldGenData& data, float biomeNoiseSample);
+[[nodiscard]] const TreeDef* findTreeById(const WorldGenData& data, int treeId);
 
 } // namespace voxel::gen

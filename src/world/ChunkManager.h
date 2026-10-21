@@ -19,7 +19,8 @@ public:
     static constexpr int kDefaultHorizontalDistance = 8;
     static constexpr int kDefaultVerticalDistance = 4;
 
-    ChunkManager() = default;
+    ChunkManager();
+    ~ChunkManager();
 
     void setWorldGen(const IWorldGen* generator, uint64_t seed);
     void setBlocks(const voxel::core::BlocksFile* blocks);
@@ -33,7 +34,10 @@ public:
     void setChunkStorage(ChunkPos pos, ChunkStorage storage);
 
     void pumpCompletedMeshes();
-    void waitForPendingMeshes(int maxIterations = 1000);
+    /// Wait until no chunk has an in-flight mesh job (wall-clock cap in milliseconds).
+    void waitForPendingMeshes(int maxWaitMs = 120'000);
+
+    void logMeshStatus() const;
 
     [[nodiscard]] std::vector<ChunkPos> loadedChunkPositions() const;
     [[nodiscard]] const std::vector<MeshQuad>& meshQuads(ChunkPos pos) const;
@@ -66,6 +70,7 @@ private:
     void ensureLoaded(ChunkPos pos);
     void unloadOutside(const ChunkPos& center, int horizontalDistance, int verticalDistance);
     void requestRemesh(ChunkPos pos);
+    [[nodiscard]] bool hasMeshingChunks() const;
     void requestRemeshWithNeighbors(ChunkPos pos, int localX, int localY, int localZ);
     [[nodiscard]] voxel::core::BlockId queryWorld(int wx, int wy, int wz) const;
 };

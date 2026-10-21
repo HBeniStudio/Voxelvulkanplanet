@@ -71,11 +71,14 @@ set(VOXEL_LIB_SOURCES
     src/world/FlatWorldGen.cpp
     src/world/RegionFile.cpp
     src/world/WorldRegister.cpp
+    src/world/WorldSession.cpp
+    src/world/ChunkStreamingRegister.cpp
     src/gen/Biomes.cpp
     src/gen/TerrainGen.cpp
     src/gen/Caves.cpp
     src/gen/Ores.cpp
     src/gen/Trees.cpp
+    src/gen/WorldBorder.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
     src/gfx/HeadlessChunks.cpp
@@ -85,6 +88,8 @@ set(VOXEL_LIB_SOURCES
     src/gfx/ChunkRenderer.cpp
     src/gfx/ChunkRendererRegister.cpp
     src/gfx/TestCubeCamera.cpp
+    src/gfx/TerrainCamera.cpp
+    src/gfx/scene/TerrainScene.cpp
     src/gfx/Swapchain.cpp
     src/gfx/DesktopApp.cpp
     src/gfx/scene/TestCubeScene.cpp
@@ -193,4 +198,5 @@ add_test(NAME voxel_tests COMMAND voxel_tests)
 set_tests_properties(voxel_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json"
+    TIMEOUT 180
 )
