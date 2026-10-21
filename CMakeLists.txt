@@ -21,6 +21,8 @@ find_program(GLSLC_EXECUTABLE glslc REQUIRED)
 set(SHADER_SOURCES
     shaders/tri.vert
     shaders/tri.frag
+    shaders/chunk.vert
+    shaders/chunk.frag
 )
 
 set(SPIRV_OUTPUTS "")
@@ -48,6 +50,16 @@ set(VOXEL_LIB_SOURCES
     src/core/World.cpp
     src/gfx/VkContext.cpp
     src/gfx/Headless.cpp
+    src/gfx/HeadlessChunks.cpp
+    src/gfx/Camera.cpp
+    src/gfx/Frustum.cpp
+    src/gfx/TextureArray.cpp
+    src/gfx/ChunkRenderer.cpp
+    src/gfx/ChunkRendererRegister.cpp
+    src/gfx/TestCubeCamera.cpp
+    src/gfx/Swapchain.cpp
+    src/gfx/DesktopApp.cpp
+    src/gfx/scene/TestCubeScene.cpp
 )
 
 add_executable(voxel
@@ -81,6 +93,34 @@ target_link_libraries(voxel PRIVATE
 
 if(WIN32)
     target_compile_definitions(voxel PRIVATE NOMINMAX)
+endif()
+
+add_executable(voxel_desktop
+    src/desktop_main.cpp
+    ${VOXEL_LIB_SOURCES}
+)
+add_dependencies(voxel_desktop shaders)
+target_include_directories(voxel_desktop PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${Stb_INCLUDE_DIR}
+)
+target_compile_definitions(voxel_desktop PRIVATE
+    VOXEL_SHADER_DIR="${CMAKE_CURRENT_BINARY_DIR}/shaders"
+    VOXEL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    VK_NO_PROTOTYPES
+)
+target_link_libraries(voxel_desktop PRIVATE
+    volk::volk
+    vk-bootstrap::vk-bootstrap
+    Vulkan::Headers
+    GPUOpen::VulkanMemoryAllocator
+    glfw
+    glm::glm
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+)
+if(WIN32)
+    target_compile_definitions(voxel_desktop PRIVATE NOMINMAX)
 endif()
 
 add_executable(voxel_tests tests/test_main.cpp ${VOXEL_LIB_SOURCES})

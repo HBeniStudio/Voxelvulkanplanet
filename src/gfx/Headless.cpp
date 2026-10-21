@@ -1,7 +1,9 @@
 #include "gfx/Headless.h"
 
+#include "core/Config.h"
 #include "core/Log.h"
 #include "core/Registry.h"
+#include "gfx/HeadlessChunks.h"
 
 #include <spdlog/spdlog.h>
 
@@ -67,6 +69,11 @@ Headless::Headless(VkContext& ctx) : ctx_(ctx) {}
 Headless::~Headless() = default;
 
 void Headless::run(int frames, uint32_t width, uint32_t height, const std::string& outPath) {
+    if (voxel::core::Config::active().scene == "test_cube") {
+        runHeadlessTestCubeScene(ctx_, frames, width, height, outPath);
+        return;
+    }
+
     VkDevice device = ctx_.device();
     VmaAllocator allocator = ctx_.allocator();
 

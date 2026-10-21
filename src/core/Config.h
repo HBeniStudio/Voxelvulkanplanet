@@ -12,8 +12,11 @@ struct Config {
     std::string logLevel = "info";
     uint32_t renderWidth = 256;
     uint32_t renderHeight = 256;
+    std::string scene = "triangle";
+    bool planetCurvature = false;
 
     static Config parse(int argc, char** argv);
+    static const Config& active();
 };
 
 } // namespace voxel::core
