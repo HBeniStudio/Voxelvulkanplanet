@@ -31,6 +31,9 @@ jobs:
           dpkg -s mesa-vulkan-drivers | grep -E '^Version:'
           ls -la /usr/share/vulkan/icd.d/lvp_icd.json
 
+      - name: Prepare vcpkg binary cache directory
+        run: mkdir -p "${{ github.workspace }}/.vcpkg-cache"
+
       - name: Cache vcpkg
         uses: actions/cache@v4
         with:
