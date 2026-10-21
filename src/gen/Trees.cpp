@@ -11,10 +11,56 @@ namespace voxel::gen {
 
 namespace {
 
-constexpr voxel::core::BlockId kBedrock = 10;
-
 bool isSolidSurface(voxel::core::BlockId id) {
     return id != 0 && id != 5;
+}
+
+const TreeDef* pickTreeForColumn(const WorldGenData& data, const BiomeDef& biome, uint64_t seed, int wx,
+                                 int surfaceWy, int wz) {
+    if (data.trees.empty()) {
+        return nullptr;
+    }
+    const float pickRoll = hashToUnit(seed + 31, wx, surfaceWy, wz);
+    if (!biome.tree_ids.empty()) {
+        const size_t index =
+            static_cast<size_t>(pickRoll * static_cast<float>(biome.tree_ids.size()));
+        const int treeId = biome.tree_ids[std::min(index, biome.tree_ids.size() - 1)];
+        return findTreeById(data, treeId);
+    }
+    const size_t index = static_cast<size_t>(pickRoll * static_cast<float>(data.trees.size()));
+    return &data.trees[std::min(index, data.trees.size() - 1)];
+}
+
+void placeTree(const TreeDef& tree, voxel::world::ChunkStorage& storage, int lx, int surfaceLy, int lz,
+               int clampedHeight) {
+    for (int h = 1; h <= clampedHeight; ++h) {
+        const int ly = surfaceLy + h;
+        if (ly >= voxel::world::kChunkSize) {
+            break;
+        }
+        storage.set(lx, ly, lz, tree.log_block);
+    }
+
+    const int canopyBaseLy = surfaceLy + clampedHeight - 1;
+    for (int dz = -tree.canopy_radius; dz <= tree.canopy_radius; ++dz) {
+        for (int dy = -1; dy <= tree.canopy_radius; ++dy) {
+            for (int dx = -tree.canopy_radius; dx <= tree.canopy_radius; ++dx) {
+                if (dx * dx + dy * dy + dz * dz > tree.canopy_radius * tree.canopy_radius + 1) {
+                    continue;
+                }
+                const int lx2 = lx + dx;
+                const int ly2 = canopyBaseLy + dy;
+                const int lz2 = lz + dz;
+                if (lx2 < 0 || lx2 >= voxel::world::kChunkSize || ly2 < 0 ||
+                    ly2 >= voxel::world::kChunkSize || lz2 < 0 || lz2 >= voxel::world::kChunkSize) {
+                    continue;
+                }
+                if (storage.get(lx2, ly2, lz2) == 0) {
+                    storage.set(lx2, ly2, lz2, tree.leaves_block);
+                }
+            }
+        }
+    }
 }
 
 } // namespace
@@ -24,7 +70,6 @@ void applyTrees(const WorldGenData& data, const FastNoise::SmartNode<>& biomeNoi
     if (data.trees.empty()) {
         return;
     }
-    const TreeDef& tree = data.trees[0];
 
     const int baseY = pos.y * voxel::world::kChunkSize;
     const int wx0 = pos.x * voxel::world::kChunkSize;
@@ -63,40 +108,18 @@ void applyTrees(const WorldGenData& data, const FastNoise::SmartNode<>& biomeNoi
                 continue;
             }
 
+            const TreeDef* tree = pickTreeForColumn(data, biome, seed, wx, surfaceWy, wz);
+            if (tree == nullptr) {
+                continue;
+            }
+
             const float heightRoll = hashToUnit(seed + 17, wx, surfaceWy, wz);
-            const int trunkHeight = tree.min_height + static_cast<int>(std::floor(
-                heightRoll * static_cast<float>(tree.max_height - tree.min_height + 1)));
-            const int clampedHeight = std::clamp(trunkHeight, tree.min_height, tree.max_height);
+            const int trunkHeight = tree->min_height + static_cast<int>(std::floor(
+                heightRoll * static_cast<float>(tree->max_height - tree->min_height + 1)));
+            const int clampedHeight =
+                std::clamp(trunkHeight, tree->min_height, tree->max_height);
 
-            for (int h = 1; h <= clampedHeight; ++h) {
-                const int ly = surfaceLy + h;
-                if (ly >= voxel::world::kChunkSize) {
-                    break;
-                }
-                storage.set(lx, ly, lz, tree.log_block);
-            }
-
-            const int canopyBaseLy = surfaceLy + clampedHeight - 1;
-            for (int dz = -tree.canopy_radius; dz <= tree.canopy_radius; ++dz) {
-                for (int dy = -1; dy <= tree.canopy_radius; ++dy) {
-                    for (int dx = -tree.canopy_radius; dx <= tree.canopy_radius; ++dx) {
-                        if (dx * dx + dy * dy + dz * dz > tree.canopy_radius * tree.canopy_radius + 1) {
-                            continue;
-                        }
-                        const int lx2 = lx + dx;
-                        const int ly2 = canopyBaseLy + dy;
-                        const int lz2 = lz + dz;
-                        if (lx2 < 0 || lx2 >= voxel::world::kChunkSize || ly2 < 0 ||
-                            ly2 >= voxel::world::kChunkSize || lz2 < 0 ||
-                            lz2 >= voxel::world::kChunkSize) {
-                            continue;
-                        }
-                        if (storage.get(lx2, ly2, lz2) == 0) {
-                            storage.set(lx2, ly2, lz2, tree.leaves_block);
-                        }
-                    }
-                }
-            }
+            placeTree(*tree, storage, lx, surfaceLy, lz, clampedHeight);
         }
     }
 }

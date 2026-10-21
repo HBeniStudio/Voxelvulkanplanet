@@ -70,6 +70,11 @@ WorldGenData loadWorldGenJson(const std::filesystem::path& path) {
         biome.height_amplitude = entry.at("height_amplitude").get<float>();
         biome.tree_density = entry.at("tree_density").get<float>();
         biome.noise_frequency = entry.at("noise_frequency").get<float>();
+        if (entry.contains("trees")) {
+            for (const auto& treeId : entry.at("trees")) {
+                biome.tree_ids.push_back(treeId.get<int>());
+            }
+        }
         data.biomes.push_back(biome);
     }
 
@@ -140,6 +145,34 @@ std::string validateWorldGenSchemaV1(const WorldGenData& data, const voxel::core
         if (biome.tree_density < 0.0f || biome.tree_density > 1.0f) {
             return "biome tree_density must be in [0, 1]";
         }
+        if (!biome.tree_ids.empty()) {
+            std::unordered_set<int> seenTreeRefs;
+            for (int treeId : biome.tree_ids) {
+                if (!seenTreeRefs.insert(treeId).second) {
+                    return "biome " + biome.name + ": duplicate tree id " + std::to_string(treeId);
+                }
+            }
+        }
+    }
+
+    if (data.ores.empty()) {
+        return "ores array must not be empty";
+    }
+    if (data.trees.empty()) {
+        return "trees array must not be empty";
+    }
+
+    std::unordered_set<int> definedTreeIds;
+    for (const TreeDef& tree : data.trees) {
+        definedTreeIds.insert(tree.id);
+    }
+
+    for (const BiomeDef& biome : data.biomes) {
+        for (int treeId : biome.tree_ids) {
+            if (!definedTreeIds.contains(treeId)) {
+                return "biome " + biome.name + ": unknown tree id " + std::to_string(treeId);
+            }
+        }
     }
 
     for (const OreDef& ore : data.ores) {
@@ -183,6 +216,15 @@ const BiomeDef& pickBiome(const WorldGenData& data, float biomeNoiseSample) {
     const size_t index =
         std::min(data.biomes.size() - 1, static_cast<size_t>(t * static_cast<float>(data.biomes.size())));
     return data.biomes[index];
+}
+
+const TreeDef* findTreeById(const WorldGenData& data, int treeId) {
+    for (const TreeDef& tree : data.trees) {
+        if (tree.id == treeId) {
+            return &tree;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace voxel::gen

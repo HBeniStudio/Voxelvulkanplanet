@@ -35,9 +35,22 @@ uint64_t generateHash(const voxel::gen::TerrainGen& gen, voxel::world::ChunkPos 
 TEST_CASE("worldgen schema v1 accepts shipped biomes.json") {
     const auto data = loadValidatedWorldGen();
     CHECK(data.schema == 1);
-    CHECK(data.biomes.size() == 4);
-    CHECK(data.ores.size() == 2);
-    CHECK(data.trees.size() == 1);
+    CHECK(data.biomes.size() >= 1);
+    CHECK(data.ores.size() >= 1);
+    CHECK(data.trees.size() >= 1);
+
+    auto hasBiome = [&](const char* name) {
+        for (const voxel::gen::BiomeDef& biome : data.biomes) {
+            if (biome.name == name) {
+                return true;
+            }
+        }
+        return false;
+    };
+    CHECK(hasBiome("plains"));
+    CHECK(hasBiome("forest"));
+    CHECK(hasBiome("desert"));
+    CHECK(hasBiome("mountains"));
 }
 
 TEST_CASE("worldgen schema v1 rejects invalid block ids and fields") {
@@ -60,6 +73,16 @@ TEST_CASE("worldgen schema v1 rejects invalid block ids and fields") {
     badOre.ores[0].min_y = 200;
     badOre.ores[0].max_y = 10;
     CHECK_FALSE(voxel::gen::validateWorldGenSchemaV1(badOre, blocks).empty());
+
+    voxel::gen::WorldGenData badBiomeTree = good;
+    badBiomeTree.biomes[0].tree_ids = {999};
+    const std::string treeErr = voxel::gen::validateWorldGenSchemaV1(badBiomeTree, blocks);
+    CHECK_FALSE(treeErr.empty());
+    CHECK(treeErr.find("unknown tree id") != std::string::npos);
+
+    voxel::gen::WorldGenData noOres = good;
+    noOres.ores.clear();
+    CHECK_FALSE(voxel::gen::validateWorldGenSchemaV1(noOres, blocks).empty());
 }
 
 TEST_CASE("terrain generation is seed-deterministic across runs and threads") {
