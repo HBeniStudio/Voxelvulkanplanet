@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "sea_level": 64,
-  "bedrock_layers": 1,
+  "bedrock_layers": 5,
   "region": { "size_x": 4096, "size_y": 512, "size_z": 4096 },
-  "height_noise": { "frequency": 0.004, "octaves": 4, "seed_offset": 100 },
-  "biome_noise": { "frequency": 0.0015, "octaves": 3, "seed_offset": 200 },
-  "cave_noise": { "frequency": 0.03, "octaves": 2, "seed_offset": 300 },
+  "height_noise": { "frequency": 0.0028, "octaves": 5, "seed_offset": 1100 },
+  "biome_noise": { "frequency": 0.0011, "octaves": 2, "seed_offset": 2200 },
+  "cave_noise": { "frequency": 0.02, "octaves": 3, "seed_offset": 3300 },
   "biomes": [
     {
       "id": 0,
@@ -13,10 +13,10 @@
       "surface_block": 3,
       "subsurface_block": 2,
       "filler_block": 1,
-      "height_base": 64,
+      "height_base": 66,
       "height_amplitude": 6,
-      "tree_density": 0.02,
-      "noise_frequency": 1.0
+      "tree_density": 0.012,
+      "noise_frequency": 0.85
     },
     {
       "id": 1,
@@ -24,10 +24,10 @@
       "surface_block": 3,
       "subsurface_block": 2,
       "filler_block": 1,
-      "height_base": 68,
-      "height_amplitude": 10,
-      "tree_density": 0.25,
-      "noise_frequency": 1.1
+      "height_base": 70,
+      "height_amplitude": 11,
+      "tree_density": 0.07,
+      "noise_frequency": 1.05
     },
     {
       "id": 2,
@@ -35,10 +35,10 @@
       "surface_block": 4,
       "subsurface_block": 4,
       "filler_block": 1,
-      "height_base": 62,
-      "height_amplitude": 4,
+      "height_base": 60,
+      "height_amplitude": 7,
       "tree_density": 0.0,
-      "noise_frequency": 0.9
+      "noise_frequency": 0.7
     },
     {
       "id": 3,
@@ -46,28 +46,28 @@
       "surface_block": 1,
       "subsurface_block": 1,
       "filler_block": 1,
-      "height_base": 90,
-      "height_amplitude": 40,
-      "tree_density": 0.0,
-      "noise_frequency": 1.3
+      "height_base": 108,
+      "height_amplitude": 48,
+      "tree_density": 0.008,
+      "noise_frequency": 1.4
     }
   ],
   "ores": [
     {
       "block": 8,
       "name": "coal_ore",
-      "min_y": 0,
-      "max_y": 128,
-      "vein_frequency": 0.02,
-      "vein_size": 8
+      "min_y": 32,
+      "max_y": 136,
+      "vein_frequency": 0.048,
+      "vein_size": 11
     },
     {
       "block": 9,
       "name": "iron_ore",
-      "min_y": 0,
-      "max_y": 64,
-      "vein_frequency": 0.015,
-      "vein_size": 6
+      "min_y": 5,
+      "max_y": 40,
+      "vein_frequency": 0.014,
+      "vein_size": 4
     }
   ],
   "trees": [
@@ -76,7 +76,7 @@
       "log_block": 6,
       "leaves_block": 7,
       "min_height": 4,
-      "max_height": 7,
+      "max_height": 6,
       "canopy_radius": 2
     }
   ]
