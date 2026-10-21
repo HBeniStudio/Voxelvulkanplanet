@@ -1,0 +1,17 @@
+{
+  "name": "voxel",
+  "version-string": "0.1.0",
+  "description": "Voxel survival — P1 toolchain",
+  "dependencies": [
+    "vk-bootstrap",
+    "volk",
+    "vulkan-memory-allocator",
+    "glfw3",
+    "glm",
+    "nlohmann-json",
+    "spdlog",
+    "doctest",
+    "stb"
+  ],
+  "builtin-baseline": "a2f9862da6d88040a8537fb9b8cb24deaa9a196b"
+}

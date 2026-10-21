@@ -1,0 +1,11 @@
+/build/
+/out/
+/vcpkg_installed/
+/.vs/
+/.vscode/
+*.user
+CMakeUserPresets.json
+frame.png
+build/tests-out/
+*.spv
+/vcpkg/
